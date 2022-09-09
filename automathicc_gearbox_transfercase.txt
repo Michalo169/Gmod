@@ -1,0 +1,258 @@
+@name Automathicc Gearbox
+@inputs [Pod Base ACF_GearBox ACF_TransferRight ACF_TransferLeft]:wirelink Engine:entity 
+@outputs Left_Brake Right_Brake Throttle Active
+@persist Gear Lock Left_Clutch Right_Clutch Left_Brake Right_Brake Allow_Brakes RPM_Above BrakePower
+interval(60)
+
+if(dupefinished()){reset()}
+
+if(first()){
+
+#made by STEAM_0:0:107514807 
+
+BrakePower = 50
+
+Base:entity():soundPlay("tracks",0,"acf_extra/tankfx/treadslight.wav")
+Gear = 1
+RPM_Above = 1
+  
+}
+
+local W = Pod["W",number]
+local S = Pod["S",number]
+local A = Pod["A",number]
+local D = Pod["D",number]
+
+local Vel = Base:entity():velL()
+
+local Speed = Vel:length()
+
+local Tracks_Vel = abs(Vel:x())/5
+
+local Min_Vel = 5
+
+soundPitch("tracks",clamp(Min_Vel+Tracks_Vel,35,255))
+soundVolume("tracks",clamp(-Min_Vel+Tracks_Vel,0,80))
+
+local AngVel = Base:entity():angVel():yaw()
+
+Active = Pod["Active",number]
+
+local PB_Max = Engine:acfPowerbandMin()+1000
+local PB_Min = Engine:acfPowerbandMax()
+
+local Gear_Max = ACF_GearBox:entity():acfNumGears()
+
+Throttle = abs(W-S)*100
+
+local RPM = Engine:acfRPM()
+
+
+if(changed(Active)){
+
+        ACF_TransferRight["Right Brake",number] = 0
+        ACF_TransferRight["Left Brake",number] = 0   
+        ACF_TransferLeft["Right Brake",number] = 0
+        ACF_TransferLeft["Left Brake",number] = 0 
+        ACF_TransferRight["Gear",number] = 1
+        ACF_TransferLeft["Gear",number] = 1
+        ACF_TransferLeft["Right Clutch",number] = 0
+        ACF_TransferLeft["Left Clutch",number] = 0
+        ACF_TransferRight["Right Clutch",number] = 0
+        ACF_TransferRight["Left Clutch",number] = 0
+        Left_Brake = 0
+        Right_Brake = 0
+       
+}
+
+
+if(RPM>(PB_Max)){
+
+    RPM_Above = 1
+
+}else{
+    
+    RPM_Above = 0 
+
+}
+
+
+
+if(changed(RPM_Above)){
+        
+    if(RPM_Above==1){
+        
+        Left_Clutch = 0
+        Right_Clutch = 0
+       
+    }
+    if(RPM_Above==0){ 
+        
+        Left_Clutch = 1
+        Right_Clutch = 1
+        
+    }
+
+}
+if(W|S){
+    
+    if( Lock == 0 ){
+        
+        if((W|S)&!A&!D){    
+               
+            if( RPM > PB_Max & Gear < Gear_Max ){
+                    
+                Gear++
+                Lock = 1
+            
+            }
+            
+            if( RPM < PB_Min & Gear > 1 ){
+                    
+                Gear--
+                Lock = 1
+            
+            }
+            
+        }
+    
+    }
+    
+    
+    if(Speed>100){
+     
+        Allow_Brakes = 1
+       
+    }else{
+        
+        Allow_Brakes = 0
+        
+    }
+    
+    
+    if(!A&!D){
+        
+        local Dir = round(clamp(Base:entity():velL():x()*4,-1,1))
+        
+        local Velocity = round(AngVel/200,3)*Dir
+        
+        local Right = clamp(Velocity,0,1000)
+        local Left = clamp(-Velocity,0,1000)
+        
+        ACF_TransferRight["Right Brake",number] = Right
+        ACF_TransferRight["Left Brake",number] = Right
+        ACF_TransferLeft["Right Brake",number] = Left
+        ACF_TransferLeft["Left Brake",number] = Left
+    
+    }else{
+        
+        ACF_TransferRight["Right Brake",number] = 0
+        ACF_TransferRight["Left Brake",number] = 0   
+        ACF_TransferLeft["Right Brake",number] = 0
+        ACF_TransferLeft["Left Brake",number] = 0    
+          
+    }
+    
+    
+    if(RPM_Above==1){
+    
+            if(S){
+                                 ACF_TransferRight["Gear",number] = (2-(D*(1-Allow_Brakes)))
+                ACF_TransferLeft["Gear",number] = (2-(A*(1-Allow_Brakes)))   
+
+            }else{
+                
+
+                         ACF_TransferRight["Gear",number] = (1+(D*(1-Allow_Brakes)))
+                ACF_TransferLeft["Gear",number] = (1+(A*(1-Allow_Brakes)))
+            }  
+    
+          
+        if(Allow_Brakes==0){
+       
+            Left_Clutch = 0
+            Right_Clutch = 0
+            Left_Brake = 0
+            Right_Brake = 0   
+    
+        }else{
+         
+        if(abs(A-D)){
+                 
+                Left_Brake = A-(D*A)
+                Right_Brake = D-(A*D)
+                
+            }else{
+                    
+                Left_Brake = 0
+                Right_Brake = 0
+                   
+            }
+           
+        }
+    }else{
+    
+    Left_Brake = 0
+    Right_Brake = 0
+       
+    }
+    
+}else{
+
+    ACF_TransferRight["Right Brake",number] = 1 * BrakePower
+    ACF_TransferRight["Left Brake",number] = 1 * BrakePower 
+    ACF_TransferLeft["Right Brake",number] = 1 * BrakePower
+    ACF_TransferLeft["Left Brake",number] = 1 * BrakePower
+    Left_Clutch = 0
+    Right_Clutch = 0
+    Gear = 1
+
+}
+
+if(changed(Right_Clutch)){
+     
+    ACF_TransferRight["Right Clutch",number] = Right_Clutch
+    ACF_TransferRight["Left Clutch",number] = Right_Clutch
+       
+}
+
+
+if(changed(Left_Clutch)){
+     
+    ACF_TransferLeft["Right Clutch",number] = Left_Clutch
+    ACF_TransferLeft["Left Clutch",number] = Left_Clutch
+   
+}
+
+
+
+
+if(Lock){
+        
+    timer("1",240) 
+     
+    if(clk("1")){
+            
+        stoptimer("1")
+        Lock = 0   
+         
+    } 
+ 
+}
+
+if(changed(RPM_Above)){ 
+ACF_GearBox["Clutch",number] = 1-RPM_Above    
+}
+
+if(changed(Gear)){
+
+ACF_GearBox["Gear",number] = Gear
+   
+}
+
+
+
+
+
+
+
