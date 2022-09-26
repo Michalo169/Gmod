@@ -1,0 +1,307 @@
+@name Playlist
+@inputs  Wire:wirelink
+@persist Lock Num Lock1 Load LockLoading Count Play Pause
+@persist [PlayList Last A4]:array [Url FirstStage OutPutUrl FileName]:string Mode Request
+@persist [WorkName PrintName_State]:string X
+
+@model models/cheeze/wires/cpu2.mdl
+
+interval(60) 
+runOnFile(1)
+runOnChat(1)
+
+#[
+
+Version 1.0
+
+Made by Mifek [https://steamcommunity.com/profiles/76561198175295342/]
+
+HOW TO MAKE A PLAYLIST
+
+Basicly create .txt file and fill it with dropbox links like this: 
+
+https://www.dropbox.com/s/lh69fdsexi2137u1/Giga_porno.mp3?dl=1*https://www.dropbox.com/s/96bv96h2137droe/UrMumGae.mp3?dl=1
+                                                              ^
+                                                              |
+                                                              |
+                                                              |
+                                                            
+                                            Links need to be separated with this *
+                                            
+Then put it in to this folder -->  GarrysMod\garrysmod\data\e2files
+
+]#
+
+if(first()|duped()){
+#ifdef fileLoad(string)
+print("E2 has file extension")
+#else
+error("E2 needs file extension enabled")
+#endif    
+}
+
+if(duped()|~Wire){  
+
+
+Wire["Stream URL",string] = ""
+Wire["Play",number] = 0
+Wire["Pause",number] = 0
+Wire["Loop",number] = 0
+
+print("
+Commands
+>@load [filename without .txt]
+>@play
+>@pause
+>@stop
+>@skip
+>@return 
+>@setto [Num]
+>@volume [Num 0-100]
+>@radius [Num 0-5000]
+>@3d [0/1]
+>@restart
+")
+
+}
+
+Ended = Wire["Ended",number]
+
+
+if(Load&fileCanLoad()&LockLoading==0){
+    
+fileLoad(FileName+".txt")  
+
+}
+
+if(fileClk()){
+
+    if(fileLoaded()){
+        
+        LockLoading = 1
+        
+        print("playlist loaded ^^")
+        
+        PlayList=fileRead():explode("*")
+        
+        Count = PlayList:count()
+        
+        print("Playlist got: "+Count+" Urls")
+        
+        Play = 0
+        
+        Pause = 0
+    
+        Load = 0
+        
+        Num++
+        
+    }
+    
+    if(fileCanLoad()){
+        
+        print("Can't load file named "+FileName)  
+      
+    }
+
+}
+
+
+if(changed(Num)){
+    
+    Mode = 1
+    Request = 1
+    
+    }elseif(Mode>0){
+    
+    if(Mode == 1){
+            
+        FirstStage = PlayList[Num,string]:explode("https://www.dropbox.com/s/")[1,string]
+        
+        Mode = 2
+        
+    }elseif(Mode == 2){
+        
+        if(FirstStage==PlayList[Num,string]){
+                
+            OutPutUrl = PlayList[Num,string]   
+            Mode = 3 
+                
+        }else{
+            
+            OutPutUrl = "https://www.dl.dropboxusercontent.com/s/"+PlayList[Num,string]:explode("https://www.dropbox.com/s/")[2,string]
+            Mode = 3 
+                
+        }
+        
+    }
+    
+    if(Mode == 3){
+        
+        Url = OutPutUrl 
+        
+        FirstStage == ""
+        
+        Mode = 0
+        
+    }   
+
+}
+
+if(Ended==1){
+    
+    if(Lock==0){
+
+        Num++
+    
+        Lock=1
+       
+    }
+    
+}else{
+    
+    Lock=0
+    
+}  
+    
+if(Num>Count|Num<0){
+        
+Num = 1  
+ 
+}
+ 
+
+    
+if(chatClk(owner())){
+
+    Last=owner():lastSaid():explode(" ")
+    
+    if(Last[1,string]==">@load"){
+    hideChat(1)    
+        LockLoading = 0
+        FileName = Last[2,string]
+        Load = 1  
+      
+    }
+    
+    if(Last[1,string]==">@skip"){
+    hideChat(1)     
+        Num++    
+    
+    }
+    
+    if(Last[1,string]==">@return"){
+    hideChat(1)     
+        Num--  
+      
+    }
+     
+    if(Last[1,string]==">@setto"){
+    hideChat(1)     
+        local Number = Last[2,string]:toNumber()
+        
+        Num = Number  
+      
+    }
+    
+    if(Last[1,string]==">@volume"){
+    hideChat(1)     
+        local Volume = Last[2,string]:toNumber()
+        
+        Wire["Volume",number] = clamp(Volume,0,100)/100  
+      
+    }
+    
+    if(Last[1,string]==">@radius"){
+    hideChat(1)     
+        local Radius = Last[2,string]:toNumber()
+        
+        Wire["Radius",number] = clamp(Radius,0,5000)  
+      
+    }
+    
+    if(Last[1,string]==">@3d"){
+    hideChat(1)     
+        local StreamSound = Last[2,string]:toNumber()
+        
+        Wire["3D Sound",number] = clamp(StreamSound,0,1)  
+      
+    }
+    
+    
+    
+    if(Last[1,string]==">@play"){
+    hideChat(1)     
+        if(Play==0){
+                
+            Play = 1   
+             
+        }else{
+            
+            Pause = 0
+            
+        }
+        
+    }
+    
+    if(Last[1,string]==">@stop"){
+    hideChat(1)     
+        Play = 0 
+    
+    }
+    
+    if(Last[1,string]==">@pause"){
+    hideChat(1)     
+        Pause = 1  
+      
+    }
+    
+    if(Last[1,string]==">@restart"){
+    hideChat(1)     
+        Pause = 0
+        Play = 0
+        Url = ""
+        Num = 1
+        timer("restartE2",120)
+      
+    }
+
+  
+}
+
+
+if(clk("restartE2")){
+    
+    Wire["Stream URL",string] = ""
+    reset()
+    
+    }
+
+if(changed(Play)){
+ 
+Wire["Play",number] = Play
+   
+}
+
+if(changed(Pause)){
+ 
+Wire["Pause",number] = Pause
+   
+}
+
+if(changed(Url)){
+    
+Wire["Stream URL",string] = Url
+timer("restart1",120)   
+}
+
+if(clk("restart1")&Play==1){
+Wire["Play",number] = 0   
+timer("restart2",120)    
+}
+
+if(clk("restart2")){
+Wire["Play",number] = 1      
+}
+
+
