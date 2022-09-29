@@ -1,0 +1,235 @@
+@name GG5 as holoturret (CDUMod)
+@inputs [Gun Gun1 Gun2]:entity Active #[Aktywacja :D]# [HAxis VAxis #[Ogolnie to bron tez moze byc :D]# Gate]:entity [Cam Pod]:wirelink Vec:vector #[Podmiana AimPosa Dziala]#
+@persist [Position]:vector FOV Distance Interval CamDistance
+@outputs Ops
+@outputs [Self Chair]:entity
+@outputs [Filter]:array AimPos:vector Active_Out
+@persist [GunAng]:angle AimPos:vector Debug
+@persist MaxElevation MaxDepression MaxDepressions:array MinYaw MaxYaw RotateSpeed Unlock Zoom [CamOffset CamPos]:vector CamParent:entity
+@trigger Active
+
+#-----MAKE SURE THE E2 IS FACING NORTH FOR FUCKS SAKE. MAKE. SURE. IT. FACES. NORTHHHHHHHHHHHH.-----#
+#-----If you modify this to reach some 200 ops while idle you're scum and should kill yourself.-----#
+
+#--------------------------------------------------------------------------------------------------------------#
+#       ^
+#       |
+#       |
+#Fuck your insturctions -CDU
+#--------------------------------------------------------------------------------------------------------------#
+if(first()|dupefinished()){
+  Self=entity()   
+    GunAng = Self:toLocal(Gun:angles())
+#   Orient=Self:toWorld(ang(0,GunAng:yaw(),0))
+
+    GUN_OFFSET = vec(19,0,0)
+
+Debug = 0
+
+holoCreate(3,HAxis:pos(),vec(0.3),Self:toWorld(ang(0,GunAng:yaw(),0)))
+holoAlpha(3,0)
+
+holoCreate(2,VAxis:toWorld(GUN_OFFSET),vec(0.3),Gun:angles():setRoll(0))  
+holoAlpha(2,0)
+
+VAxis:deparent()
+HAxis:deparent()
+Gate:deparent()
+Gun:deparent()
+Gun1:deparent()
+Gun2:deparent()
+
+if(Debug==0){    
+timer("parent",240)
+}else{
+    
+holoCreate(10,holoEntity(2):pos(),vec(1),holoEntity(2):angles())  
+holoModel(10,"models/sprops/misc/axis_plane.mdl")
+holoCreate(11,holoEntity(3):pos(),vec(1),holoEntity(3):angles())  
+holoModel(11,"models/sprops/misc/axis_plane.mdl")
+holoCreate(12,entity():toWorld(vec(12,0,0)),vec(1),entity():toWorld(ang(0,90,90)))  
+holoModel(12,"models/sprops/misc/alphanum/alphanum_arrow_a.mdl")
+
+  
+}
+holoParent(3,Self)
+holoParent(2,3)
+runOnLast(1)
+
+
+}
+
+if(clk("parent")){
+
+VAxis:parentTo(holoEntity(2))
+HAxis:parentTo(holoEntity(3))
+Gate:parentTo(holoEntity(3)) 
+Gun:parentTo(holoEntity(2))
+Gun1:parentTo(holoEntity(2))
+Gun2:parentTo(holoEntity(2))
+    
+}
+
+if ( ~Active|dupefinished() ) {
+    
+    Interval=60 # Better rotation but with more Ops
+
+    MaxElevation = 25 #---How High you can aim up (in degrees)---#
+    MaxDepressions = array(15,15) #---How Low you can aim down (in degrees) [Front,Rear]---#
+    MinYaw = 60 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
+    MaxYaw = 60 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
+    RotateSpeed = 45 #---Turret Rotation Speed in Degrees per Second---#
+    FOV_Options = vec2(90,50) #---FOV settings. First is zoomed out and other zoomed in---#
+    CamOffset = vec(0,0,150)
+
+    #Self = entity() #---Ignore this shit, doesn't need to be touched---#
+    Q=0
+#  -DO NOT TOUCH ANYTHING ELSE UNDER THIS.
+#--------------------------------------------------------------------------------------------------------------#
+        # Automatic settings
+    Unlock = 0
+    RotateSpeed /= 20
+    PrevWeapon=0
+    FOV = 90
+   ## holoCreate(1)
+    #holoAlpha(1,0)
+}
+
+
+
+if ( Active) {
+    
+    Active_Out = 1
+    
+    if(Vec){
+            
+        AimPos = Vec  
+        Unlock = 1
+         
+    }else{   
+            
+        local Chair = Pod["Entity",entity]
+             
+        local User = Chair:driver()
+    
+        local Prev = Pod["PrevWeapon",number]
+        
+        local Key_Zoom = Pod["ThirdPerson",number]
+        
+        local Key_Unlock = Pod["Light",number]
+        
+        if(changed(Key_Zoom)){
+            
+            Zoom = Key_Zoom 
+             
+        }
+        
+        if(changed(Key_Unlock)&Key_Unlock){
+            
+            Unlock = !Unlock 
+             
+        }
+        
+        
+        switch(Zoom){
+            
+            case 0,
+                
+                CamPos = CamOffset
+                
+                CamParent = Self
+                
+                Distance = 400
+                
+                FOV = FOV_Options:x()
+                
+            break
+            
+            case 1,
+                
+                CamPos = vec(5,0,15)
+                
+                CamParent = Gun
+                
+                Distance = 0
+                
+                FOV = FOV_Options:y()
+                
+            break
+                
+        }
+            
+     
+        Cam["Activated",number] = 1
+        #Entity the camera originates from
+        Cam["Position",vector]  = CamParent:toWorld(CamPos)
+        #Entity the camera parents to
+        Cam["Parent",entity]    = CamParent
+        
+        Cam["Distance",number]    = Distance
+        Cam["FOV",number]    = FOV
+    
+        rangerFilter(Gun)
+        rangerFilter(HAxis)
+        rangerFilter(VAxis)
+        rangerFilter(Gate)
+        rangerFilter(Gun:getConnectedEntities())
+        rangerFilter(Gate:getConnectedEntities())
+        rangerFilter(HAxis:getConnectedEntities())
+        rangerFilter(VAxis:getConnectedEntities())
+        rangerFilter(entity():getConnectedEntities())
+        rangerPersist(1)
+    
+        local Position = CamParent:toWorld(CamPos)
+        local Angle = Chair:toLocal(User:eyeAngles())
+        local Ranger = rangerOffset(9999999,Position,Angle:forward())
+        
+        AimPos = Ranger:pos()
+                
+    }
+    
+    GunDir=(AimPos-Gun:massCenter()):normalized()      
+   # GunDir = Gun:heading(AimPos)
+    if(Unlock==1){    
+        
+        
+        
+        GunAng = angnorm(clamp(GunAng - clamp(heading(vec(), GunAng, Self:toLocalAxis(GunDir)), -RotateSpeed, RotateSpeed), ang(-MaxElevation,-MinYaw, 0), ang(MaxDepression, MaxYaw, 0)))
+    
+        GunYaw = Self:toWorld(ang(0,clamp(GunAng:yaw(),-MinYaw,MaxYaw),0))
+        holoAng(3,GunYaw)
+        
+        GunPitch = ang(clamp(GunAng:pitch(),-MaxElevation,MaxDepression),0,0)
+        holoAng(2,holoEntity(3):toWorld(GunPitch))
+        
+        local Arch  = abs(angnorm(Self:toLocal(GunYaw)+ang(0,180,0)):yaw()/180)
+        
+        local Arch_Neg = 1-Arch
+        
+        local Dep_F = MaxDepressions[1,number]
+        local Dep_R = MaxDepressions[2,number]
+        
+        MaxDepression = (Dep_F*Arch+Dep_R*Arch_Neg)
+
+    }    
+    
+    interval(Interval)
+    Ops=ops()
+}else{
+
+Active_Out = 0    
+Cam["Activated",number] = 0
+    
+}
+
+
+
+if(last()&Debug==0){
+Gate:parentTo(Self)     
+Gun:parentTo(Self)    
+Gun1:parentTo(Self)
+Gun2:parentTo(Self)  
+VAxis:parentTo(Self)  
+HAxis:parentTo(Self) 
+}
+
