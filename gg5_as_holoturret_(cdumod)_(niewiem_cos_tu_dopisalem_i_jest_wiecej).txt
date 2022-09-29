@@ -18,45 +18,49 @@
 #Fuck your insturctions -CDU
 #--------------------------------------------------------------------------------------------------------------#
 if(first()|dupefinished()){
-  Self=entity()   
-    GunAng = Self:toLocal(Gun:angles())
-#   Orient=Self:toWorld(ang(0,GunAng:yaw(),0))
-
-    GUN_OFFSET = vec(19,0,0)
-
-Debug = 0
-
-holoCreate(3,HAxis:pos(),vec(0.3),Self:toWorld(ang(0,GunAng:yaw(),0)))
-holoAlpha(3,0)
-
-holoCreate(2,VAxis:toWorld(GUN_OFFSET),vec(0.3),Gun:angles():setRoll(0))  
-holoAlpha(2,0)
-
-VAxis:deparent()
-HAxis:deparent()
-Gate:deparent()
-Gun:deparent()
-Gun1:deparent()
-Gun2:deparent()
-
-if(Debug==0){    
-timer("parent",240)
-}else{
+    Self = entity()   
     
-holoCreate(10,holoEntity(2):pos(),vec(1),holoEntity(2):angles())  
-holoModel(10,"models/sprops/misc/axis_plane.mdl")
-holoCreate(11,holoEntity(3):pos(),vec(1),holoEntity(3):angles())  
-holoModel(11,"models/sprops/misc/axis_plane.mdl")
-holoCreate(12,entity():toWorld(vec(12,0,0)),vec(1),entity():toWorld(ang(0,90,90)))  
-holoModel(12,"models/sprops/misc/alphanum/alphanum_arrow_a.mdl")
+    GunAng = Self:toLocal(Gun:angles())
+    #Orient=Self:toWorld(ang(0,GunAng:yaw(),0))
 
-  
-}
-holoParent(3,Self)
-holoParent(2,3)
-runOnLast(1)
+    HAxis_OFFSET = vec(0,0,0)
+    VAxis_OFFSET = vec(19,0,0)
 
+    Debug = 0
+    
+    holoCreate(3,HAxis:toWorld(HAxis_OFFSET),vec(0.3),Self:toWorld(ang(0,GunAng:yaw(),0)))
+    holoAlpha(3,0)
+    
+    holoCreate(2,VAxis:toWorld(VAxis_OFFSET),vec(0.3),Gun:angles():setRoll(0))  
+    holoAlpha(2,0)
+    
+    VAxis:deparent()
+    HAxis:deparent()
+    Gate:deparent()
+    Gun:deparent()
+    Gun1:deparent()
+    Gun2:deparent()
+    
+    if(Debug==0){ 
+           
+        timer("parent",240)
+        
+    }else{
+            
+        holoCreate(10,holoEntity(2):pos(),vec(1),holoEntity(2):angles())  
+        holoModel(10,"models/sprops/misc/axis_plane.mdl")
+        holoCreate(11,holoEntity(3):pos(),vec(1),holoEntity(3):angles())  
+        holoModel(11,"models/sprops/misc/axis_plane.mdl")
+        holoCreate(12,entity():toWorld(vec(12,0,0)),vec(1),entity():toWorld(ang(0,90,90)))  
+        holoModel(12,"models/sprops/misc/alphanum/alphanum_arrow_a.mdl")
+           
+    }
+    
 
+    holoParent(3,Self)
+    holoParent(2,3)
+    runOnLast(1)
+    
 }
 
 if(clk("parent")){
@@ -192,7 +196,7 @@ if ( Active) {
    # GunDir = Gun:heading(AimPos)
     if(Unlock==1){    
         
-        
+        entity()
         
         GunAng = angnorm(clamp(GunAng - clamp(heading(vec(), GunAng, Self:toLocalAxis(GunDir)), -RotateSpeed, RotateSpeed), ang(-MaxElevation,-MinYaw, 0), ang(MaxDepression, MaxYaw, 0)))
     
@@ -232,4 +236,3 @@ Gun2:parentTo(Self)
 VAxis:parentTo(Self)  
 HAxis:parentTo(Self) 
 }
-
