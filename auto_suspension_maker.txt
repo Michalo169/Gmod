@@ -30,11 +30,13 @@ if SERVER then
 
     -- Settings
 
-    local Debug = 1
+    local Debug = 0
+    local MakeBallsockets = 1
 
     local Ang_Offset = Angle(0,0,0)
     local Rope_Offset = Vector(200,100,0)
-    local Elastic_Offset = Vector(0,0,75)
+    local Elastic_Offset = Vector(0,0,0)
+    local settings = {275000,2000,1000,0} --constanst, damping, rdamping
 
     
     wire.adjustInputs(
@@ -59,7 +61,6 @@ if SERVER then
         local vector2 = Vector(Rope_Offset[1], -Rope_Offset[2], Rope_Offset[3]):getRotated(Ang)
 
         local vector3 = (Vector(Elastic_Offset[1], Elastic_Offset[2], Elastic_Offset[3]):getRotated(Ang))
-        local settings = {275000,2000,1000,0}
         
         table.insert(rope, vector1)
         table.insert(rope, vector2)
@@ -125,12 +126,15 @@ if SERVER then
             end
         end
         
-        for Num4,v in ipairs(Wheels) do
-
-            constraint.ballsocketadv(wire.ports.Base, Wheels[Num4], nil, nil, Vector(0,0,0), Vector(0,0,0), nil, nil, Vector(-180,-0.01,-0.01), Vector(180,0.01,0.01), Vector(0), true, true)
-
-        end   
-        
+        if MakeBallsockets == 1 then
+                    
+            for Num4,v in ipairs(Wheels) do
+    
+                constraint.ballsocketadv(wire.ports.Base, Wheels[Num4], nil, nil, Vector(0,0,0), Vector(0,0,0), nil, nil, Vector(-180,-0.01,-0.01), Vector(180,0.01,0.01), Vector(0), true, true)
+    
+            end
+               
+        end
 --    constraint.elastic(Index, Base, Wheels, nil, nil, Wheels:getPos(), Elastics, const, damp, rdamp, 1, 1)
 --    constraint.rope(Index, Base, Wheels, nil, nil, Wheels:getPos(), Ropes, nil, nil, nil, 1, materialName, true, Color(255,255,255)) 
 --    constraint.ballsocketadv(Base, Wheels[Num2], nil, nil, Vector(0,0,0), Vector(0,0,0), nil, nil, Vector(-180,-0.01,-0.01), Vector(180,0.01,0.01), nil, true, true)               
