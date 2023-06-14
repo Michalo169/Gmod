@@ -1,0 +1,199 @@
+--@name Auto suspension maker
+--@author Michalo169
+--@shared
+
+--[[
+
+Version 1.0
+
+This SF is clusterfuck and doesn't work correctly but works fine enough
+
+Put wheels that you want to move in Wheels array [Adv Entity Marker]
+
+Then restart SF
+
+Tweak settings
+
+Set input Key to 1
+
+Restart SF
+
+Should make all constraints
+
+Maybe move SF away to make advdupe2
+
+]]
+    
+if SERVER then
+
+    -- Settings
+
+    local Debug = 1
+
+    local Ang_Offset = Angle(0,0,0)
+    local Rope_Offset = Vector(200,100,0)
+    local Elastic_Offset = Vector(0,0,75)
+
+    
+    wire.adjustInputs(
+        {"Wheels","Base","Key"},
+        {"array","entity","number"}
+        )
+
+    local Ropes = {}
+    local Elastics = {}
+    local Elastics_Settings = {}
+    
+    local Wheels = wire.ports.Wheels
+    
+    local Ang = wire.ports.Base:getAngles()+Ang_Offset
+    
+    for i, wheel in ipairs(wire.ports.Wheels) do
+        local rope = {}
+        local elastic = {}
+        local elastic_settings = {}
+        
+        local vector1 = Vector(Rope_Offset[1], Rope_Offset[2], Rope_Offset[3]):getRotated(Ang)
+        local vector2 = Vector(Rope_Offset[1], -Rope_Offset[2], Rope_Offset[3]):getRotated(Ang)
+
+        local vector3 = (Vector(Elastic_Offset[1], Elastic_Offset[2], Elastic_Offset[3]):getRotated(Ang))
+        local settings = {275000,2000,1000,0}
+        
+        table.insert(rope, vector1)
+        table.insert(rope, vector2)
+        table.insert(elastic, vector3)
+        table.insert(elastic_settings, settings)
+        
+        table.insert(Ropes, rope)
+        table.insert(Elastics, elastic)
+        table.insert(Elastics_Settings, elastic_settings)
+       
+    end
+
+    function send()
+        net.start("Data")
+        net.writeTable(Ropes)
+        net.writeTable(Elastics)
+        net.writeTable(wire.ports.Wheels)                
+        net.writeEntity(wire.ports.Base)
+                        
+        net.send(owner())   
+    end
+        
+    net.receive("1",function()
+    send()    
+    end)    
+
+    if wire.ports.Key == 1 then
+        
+        for Num,v in ipairs(Ropes) do
+                
+            for Num1,v in ipairs(Ropes[Num]) do
+                
+                local Index = #Ropes[Num]*Num+Num1
+                
+                local pos = Wheels[Num]:getPos()
+                local pos2 = wire.ports.Base:getPos()
+        
+                local Diff = (pos - pos2):getRotated(-wire.ports.Base:getAngles())
+                
+                local Dir = math.sign(Diff[1])
+                                             
+                constraint.rope(Index, Wheels[Num], wire.ports.Base, nil, nil, Vector(), Diff + Vector( Ropes[Num][Num1][1] * Dir, Ropes[Num][Num1][2], Ropes[Num][Num1][3]):getRotated(wire.ports.Base:getAngles()), nil, nil, 0, Debug, "", true, Color(255,255,255)) 
+
+            end
+           
+        end   
+        
+        for Num2,v in ipairs(Elastics) do
+                
+            for Num3,v in ipairs(Elastics[Num2]) do
+                
+                local Index = #Elastics[Num2]*Num2+Num3
+                
+                local pos = Wheels[Num2]:getPos()
+                local pos2 = wire.ports.Base:getPos()
+        
+                local Diff = (pos - pos2):getRotated(-wire.ports.Base:getAngles())
+
+                local Dir = math.sign(Diff[1])
+                
+                constraint.elastic(Index, Wheels[Num2], wire.ports.Base, nil, nil, Vector(), Diff + Vector( Elastics[Num2][Num3][1] * Dir, Elastics[Num2][Num3][2], Elastics[Num2][Num3][3]):getRotated(wire.ports.Base:getAngles()), Elastics_Settings[Num2][Num3][1], Elastics_Settings[Num2][Num3][2], Elastics_Settings[Num2][Num3][3], Debug, Elastics_Settings[Num2][Num3][4])
+                       
+            end
+        end
+        
+        for Num4,v in ipairs(Wheels) do
+
+            constraint.ballsocketadv(wire.ports.Base, Wheels[Num4], nil, nil, Vector(0,0,0), Vector(0,0,0), nil, nil, Vector(-180,-0.01,-0.01), Vector(180,0.01,0.01), Vector(0), true, true)
+
+        end   
+        
+--    constraint.elastic(Index, Base, Wheels, nil, nil, Wheels:getPos(), Elastics, const, damp, rdamp, 1, 1)
+--    constraint.rope(Index, Base, Wheels, nil, nil, Wheels:getPos(), Ropes, nil, nil, nil, 1, materialName, true, Color(255,255,255)) 
+--    constraint.ballsocketadv(Base, Wheels[Num2], nil, nil, Vector(0,0,0), Vector(0,0,0), nil, nil, Vector(-180,-0.01,-0.01), Vector(180,0.01,0.01), nil, true, true)               
+
+end
+end
+    
+if player() == owner() then 
+    net.start("1")  
+    net.send()
+      
+    net.receive("Data",function()
+        
+    Ropes = net.readTable()
+    Elastics = net.readTable()
+    Wheels = net.readTable()
+    Base = net.readEntity()
+    
+    hook.add("DrawHUD", "", function()
+        
+        render.pushViewMatrix({type = "3D"})  
+            
+        for Num,v in ipairs(Ropes) do
+                
+            for Num1,v in ipairs(Ropes[Num]) do
+                
+                local pos = Wheels[Num]:getPos()
+                local pos2 = Base:getPos()
+                                
+                local Diff = (pos - pos2):getRotated(-Base:getAngles())
+                
+                local Dir = math.sign(Diff[1])
+                                
+                render.setColor(Color(80,255,80))                
+                render.draw3DLine(Wheels[Num]:getPos(),Wheels[Num]:getPos()+Vector( Ropes[Num][Num1][1] * Dir, Ropes[Num][Num1][2], Ropes[Num][Num1][3]))
+                              
+            end
+            
+        end   
+        
+        for Num2,v in ipairs(Elastics) do
+                
+            for Num3,v in ipairs(Elastics[Num2]) do
+                
+                local pos = Wheels[Num2]:getPos()
+                local pos2 = Base:getPos()
+                                
+                local Diff = (pos - pos2):getRotated(-Base:getAngles())
+                
+                local Dir = math.sign(Diff[1])
+                            
+                render.setColor(Color(255,20,20))                
+                render.draw3DLine(Wheels[Num2]:getPos(),Wheels[Num2]:getPos()+Vector( Elastics[Num2][Num3][1] * Dir, Elastics[Num2][Num3][2], Elastics[Num2][Num3][3]))
+                              
+            end
+            
+        end   
+        
+        render.popViewMatrix()
+        
+        end)
+    
+    end)
+           
+    enableHud(owner(), true)
+        
+else            
+end

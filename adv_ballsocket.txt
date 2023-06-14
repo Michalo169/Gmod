@@ -1,0 +1,42 @@
+--@name adv ballsocket
+--@author Michalo169
+--@shared
+
+--[[
+
+Version 1.0
+
+This SF just works
+
+Put all wheels to array [Adv Entity Marker]
+
+First wheel in array must be the drive wheel
+
+If all inputs are wired restart SF and all constraints should be done
+
+]]
+
+if SERVER then
+    
+    wire.adjustInputs(
+        {"Wheels","Base","Key"},
+        {"array","entity","number"}
+        )
+
+    local Wheels = wire.ports.Wheels
+
+    if wire.ports.Key == 1 then
+        
+        for Num,v in ipairs(Wheels) do
+            
+            if Num > 1 then
+                
+            constraint.ballsocketadv(Wheels[1], v, nil, nil, Vector(0,0,0), Vector(0,0,0), nil, nil, Vector(-0.01,-180,-180), Vector(0.01,180,180), Vector(0), true, true)
+            
+            end
+            
+        end
+        
+    end 
+    
+end
