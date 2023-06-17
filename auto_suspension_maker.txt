@@ -8,6 +8,8 @@ Version 1.0
 
 This SF is clusterfuck and doesn't work correctly but works fine enough
 
+MAKE SURE THAT YOUR BUILD IS FACING NORTH
+
 Put wheels that you want to move in Wheels array [Adv Entity Marker]
 
 Then restart SF
