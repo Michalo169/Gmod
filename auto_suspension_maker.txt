@@ -4,11 +4,9 @@
 
 --[[
 
-Version 1.0
+Version 1.1
 
 This SF is clusterfuck and doesn't work correctly but works fine enough
-
-MAKE SURE THAT YOUR BUILD IS FACING NORTH
 
 Put wheels that you want to move in Wheels array [Adv Entity Marker]
 
@@ -24,6 +22,8 @@ Should make all constraints
 
 Maybe move SF away to make advdupe2
 
+Fix - rotation should work better now
+
 STEAM_0:0:107514807
 
 ]]
@@ -32,13 +32,13 @@ if SERVER then
 
     -- Settings
 
-    local Debug = 0
-    local MakeBallsockets = 1
+    local Debug = 1                              -- shows constraints
+    local MakeBallsockets = 1                    -- makes precise advballsockets to base
 
-    local Ang_Offset = Angle(0,0,0)
-    local Rope_Offset = Vector(200,100,0)
-    local Elastic_Offset = Vector(0,0,0)
-    local settings = {275000,2000,1000,0} --constanst, damping, rdamping
+    local Ang_Offset = Angle(0,0,0)              -- rotates shit
+    local Rope_Offset = Vector(-500,500,0)       -- rope offset to wheel
+    local Elastic_Offset = Vector(0,0,0)         -- elastic offset to wheel
+    local settings = {275000,2000,1000,0}        --constanst, damping, rdamping
 
     
     wire.adjustInputs(
@@ -81,6 +81,7 @@ if SERVER then
         net.writeTable(Elastics)
         net.writeTable(wire.ports.Wheels)                
         net.writeEntity(wire.ports.Base)
+        net.writeAngle(Ang_Offset)
                         
         net.send(owner())   
     end
@@ -102,9 +103,9 @@ if SERVER then
         
                 local Diff = (pos - pos2):getRotated(-wire.ports.Base:getAngles())
                 
-                local Dir = math.sign(Diff[1])
+                local Dir = math.sign(Diff:getRotated(Ang_Offset)[1])
                                              
-                constraint.rope(Index, Wheels[Num], wire.ports.Base, nil, nil, Vector(), Diff + Vector( Ropes[Num][Num1][1] * Dir, Ropes[Num][Num1][2], Ropes[Num][Num1][3]):getRotated(wire.ports.Base:getAngles()), nil, nil, 0, Debug, "", true, Color(255,255,255)) 
+                constraint.rope(Index, Wheels[Num], wire.ports.Base, nil, nil, Vector(), Diff + Vector( Ropes[Num][Num1][1] * Dir, Ropes[Num][Num1][2], Ropes[Num][Num1][3]):getRotated(-wire.ports.Base:getAngles()), nil, nil, 0, Debug, "", true, Color(255,255,255)) 
 
             end
            
@@ -121,9 +122,9 @@ if SERVER then
         
                 local Diff = (pos - pos2):getRotated(-wire.ports.Base:getAngles())
 
-                local Dir = math.sign(Diff[1])
+                local Dir = math.sign(Diff:getRotated(Ang_Offset)[1])
                 
-                constraint.elastic(Index, Wheels[Num2], wire.ports.Base, nil, nil, Vector(), Diff + Vector( Elastics[Num2][Num3][1] * Dir, Elastics[Num2][Num3][2], Elastics[Num2][Num3][3]):getRotated(wire.ports.Base:getAngles()), Elastics_Settings[Num2][Num3][1], Elastics_Settings[Num2][Num3][2], Elastics_Settings[Num2][Num3][3], Debug, Elastics_Settings[Num2][Num3][4])
+                constraint.elastic(Index, Wheels[Num2], wire.ports.Base, nil, nil, Vector(), Diff + Vector( Elastics[Num2][Num3][1] * Dir, Elastics[Num2][Num3][2], Elastics[Num2][Num3][3]):getRotated(-wire.ports.Base:getAngles()), Elastics_Settings[Num2][Num3][1], Elastics_Settings[Num2][Num3][2], Elastics_Settings[Num2][Num3][3], Debug, Elastics_Settings[Num2][Num3][4])
                        
             end
         end
@@ -137,14 +138,13 @@ if SERVER then
             end
                
         end
---    constraint.elastic(Index, Base, Wheels, nil, nil, Wheels:getPos(), Elastics, const, damp, rdamp, 1, 1)
---    constraint.rope(Index, Base, Wheels, nil, nil, Wheels:getPos(), Ropes, nil, nil, nil, 1, materialName, true, Color(255,255,255)) 
---    constraint.ballsocketadv(Base, Wheels[Num2], nil, nil, Vector(0,0,0), Vector(0,0,0), nil, nil, Vector(-180,-0.01,-0.01), Vector(180,0.01,0.01), nil, true, true)               
 
-end
+    end
+    
 end
     
-if player() == owner() then 
+if player() == owner() then
+     
     net.start("1")  
     net.send()
       
@@ -154,6 +154,7 @@ if player() == owner() then
     Elastics = net.readTable()
     Wheels = net.readTable()
     Base = net.readEntity()
+    Ang_Offset = net.readAngle()
     
     hook.add("DrawHUD", "", function()
         
@@ -168,7 +169,7 @@ if player() == owner() then
                                 
                 local Diff = (pos - pos2):getRotated(-Base:getAngles())
                 
-                local Dir = math.sign(Diff[1])
+                local Dir = math.sign(Diff:getRotated(Ang_Offset)[1])
                                 
                 render.setColor(Color(80,255,80))                
                 render.draw3DLine(Wheels[Num]:getPos(),Wheels[Num]:getPos()+Vector( Ropes[Num][Num1][1] * Dir, Ropes[Num][Num1][2], Ropes[Num][Num1][3]))
@@ -186,7 +187,7 @@ if player() == owner() then
                                 
                 local Diff = (pos - pos2):getRotated(-Base:getAngles())
                 
-                local Dir = math.sign(Diff[1])
+                local Dir = math.sign(Diff:getRotated(Ang_Offset)[1])
                             
                 render.setColor(Color(255,20,20))                
                 render.draw3DLine(Wheels[Num2]:getPos(),Wheels[Num2]:getPos()+Vector( Elastics[Num2][Num3][1] * Dir, Elastics[Num2][Num3][2], Elastics[Num2][Num3][3]))
@@ -203,5 +204,6 @@ if player() == owner() then
            
     enableHud(owner(), true)
         
-else            
+else
+                
 end
