@@ -22,7 +22,7 @@ Expression2 is fucking shit, like its so fucking trash that there are no words t
  
 It works now :)
 
-STEAM_0:0:107514807 
+Edit by STEAM_0:0:107514807 
 
 ]#
 
@@ -48,7 +48,7 @@ if(first() | dupefinished()){
     MaxYaw             = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
     RotateSpeed        = 90 #---Turret Rotation Speed in Degrees per Second---#  
     MoveSound          = "d3_citadel.podarm_move" #---Sound that e2 makes when rotating turret---#    
-    Stabilisation      = vec(1,1,1)
+    Stabilisation      = vec(1,1,1) # Stabilisation vec(0,0,1) - vertical, vec(1) - full, vec(0) - no stabilisation
     # END Settings 
     #  -DO NOT TOUCH ANYTHING ELSE UNDER THIS.
     #--------------------------------------------------------------------------------------------------------------#
@@ -106,7 +106,7 @@ if(first() | dupefinished()){
                         
             FieldOfView = FOV_Max
         }elseif(changed(FieldOfView)){
-            W["FOV",number] = FieldOfView    
+            W["FOV",number] = FieldOfView         
         }   
     }
 
@@ -198,7 +198,7 @@ if(first() | dupefinished()){
                                 if(Unlock==1){
                                 Fire = 1    
                                 }
-                            break       
+                            break            
                         }   
                     }else{
                         switch(Key){
@@ -279,7 +279,7 @@ if(first() | dupefinished()){
     event playerLeftVehicle(_:entity, Vehicle:entity) {
             if(Vehicle==Chair&->Chair){
                 Unlock = 0 
-                Cam["Activated", number] = Active_Out = 0
+                Cam["Activated", number] = Active_Out = Fire =  0
                 soundVolume("Move",0)
                 Driver = noentity()   
                 Active = 0
