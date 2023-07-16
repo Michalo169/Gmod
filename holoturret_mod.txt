@@ -1,0 +1,276 @@
+@name Holoturret mod
+@inputs [Gun Gun1 Gun2 HAxis VAxis Gate_Base Gate_Gun Chair]:entity [Cam]:wirelink Vec:vector #[Podmiana AimPosa Dziala]#
+@persist FOV FOV_Max FOV_Min Interval Cameras:table CamNum MoveSound:string
+@outputs Ops Arch MaxDepression
+@outputs [Self]:entity
+@outputs [Filter]:array AimPos:vector Active_Out
+@persist [GunAng]:angle AimPos:vector
+@persist MaxElevation MaxDepression SetDepression [MaxDepressions DepressionAngles]:array MinYaw MaxYaw RotateSpeed Unlock Active Driver:entity
+@persist Debug 
+
+
+#[
+
+This Expression2 is edit of "GG5 as holoturret" made by CDU
+
+Make sure that E2 is facing north bcos it uses [Self:toLocal()] and uh yeah
+
+It works :)
+
+Uhhhh thats all about it
+
+STEAM_0:0:107514807 
+
+]#
+
+
+if(first() | dupefinished()){
+    
+    # Settings
+
+    Debug = 0
+                    #Cameras                
+                    #                              entity, vector,                   number,      number,      number,   number
+    Cameras = table(#Parent must be defined first [Parent, Position local to parent, Minimal FOV, Maximum FOV, Distance, DrawPlayer]
+                    array(Chair, vec(0,3,48), 5, 90, 0, 0),
+                    array(Gun, vec(-50,0,30), 5, 90, 25, 1),
+                    array(entity(), vec(-80,0,30), 5, 90, 100, 1)
+                    )
+                    
+    local HAxis_Offset = vec(0, 0, 0) #Horizontal Axis Offset
+    local VAxis_Offset = vec(18.2, 0, 0) #Vertical Axis Offset
+    Interval        = 60 # Better rotation but with more Ops
+    MaxElevation    = 18 #---How High you can aim up (in degrees)---#
+    MaxDepressions  = array(5, 2, 4, 2) #---How Low you can aim down (in degrees) [Front,Side,Rear]---#
+    DepressionAngles  = array(20, 45, 130) #---Areas where depresions are set [0-[1st index]->1-[2st index]->2-[3st index]->3-[4st index]->]---#
+    MinYaw          = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
+    MaxYaw          = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
+    RotateSpeed     = 90 #---Turret Rotation Speed in Degrees per Second---#  
+    MoveSound       = "acf_extra/tankfx/servo_2.wav" #"d3_citadel.podarm_move" #---Sound that e2 makes when rotating turret---#    
+    # END Settings 
+        
+    #  -DO NOT TOUCH ANYTHING ELSE UNDER THIS.
+    #--------------------------------------------------------------------------------------------------------------#
+            
+    RotateSpeed /= 20
+    Unlock = CamNum = MaxDepression = Active = FOV_Min = FOV_Max = 0
+    Driver = noentity()   
+    FOV = 90
+    Self    = entity()   
+    GunAng  = Self:toLocal(Gun:angles())
+    
+    holoCreate(1,HAxis:toWorld(HAxis_Offset),vec(1),Self:toWorld(ang(0,GunAng:yaw(),0)))
+    holoAlpha(1,255*Debug)
+
+    holoCreate(2,VAxis:toWorld(VAxis_Offset),vec(1),Gun:angles():setRoll(0))  
+    holoAlpha(2,255*Debug)
+    
+    holoParent(1,Self)
+    holoParent(2,1)   
+        
+    function camSetup(W:wirelink,FilterEnts:array){
+        W["FilterEntities",array] = FilterEnts
+        local Flags = array(
+        14 = 0, #ParentLocal
+        15 = 1, #AutoMove
+        16 = 0, #FreeMove
+        17 = 0, #LocalMove
+        18 = 0, #AllowZoom
+        19 = 1, #AutoUnclip
+        20 = 1, #AutoUnclipIgnoreWater
+        21 = 1, #DrawPlayer
+        22 = 1  #DrawParent
+        )
+        foreach (N:number, B:number = Flags) {
+            W[N] = B
+        }        
+    }
+    
+    function cam(W:wirelink, T:table, Num, FieldOfView){
+        local Array = T[Num+1, array]    
+            
+        if(changed(Num)){
+            local Parent          = Array[1, entity]
+            local Pos             = Array[2, vector]  
+            local FOV_Max         = Array[4, number]   
+            local Dist            = Array[6, number]  
+            local DrawPlayer      = Array[7, number]  
+
+            W["Parent", entity]   = Parent
+            W["Position", vector] = Parent:toWorld(Pos)
+            W["Distance", number] = Dist
+            W["FOV", number]      = FOV_Max
+            W[21]                 = DrawPlayer #player 
+            W[18] = 0 #scoll            
+                        
+            FieldOfView = FOV_Max
+        }elseif(changed(FieldOfView)){
+            W["FOV",number] = FieldOfView    
+        }   
+    }
+
+    function parentToSelf(){
+        Gate_Base:parentTo(Self)      
+        Gate_Gun:parentTo(Self)      
+        Gun:parentTo(Self)      
+        Gun1:parentTo(Self)    
+        Gun2:parentTo(Self)    
+        VAxis:parentTo(Self)    
+        HAxis:parentTo(Self) 
+    }
+    
+    function parentToHolos(){
+        VAxis:parentTo(holoEntity(2))
+        HAxis:parentTo(holoEntity(1))
+        Gate_Gun:parentTo(holoEntity(2)) 
+        Gate_Base:parentTo(holoEntity(1)) 
+        Gun:parentTo(holoEntity(2))
+        Gun1:parentTo(holoEntity(2))
+        Gun2:parentTo(holoEntity(2))
+    }
+    
+    function deparentAll(){
+        VAxis:deparent()
+        HAxis:deparent()
+        Gate_Gun:deparent()
+        Gate_Base:deparent()
+        Gun:deparent()
+        Gun1:deparent()
+        Gun2:deparent()
+    }
+
+    if(Debug){
+        holoModel(1, "models/sprops/misc/axis_plane.mdl")
+        holoModel(2, "models/sprops/misc/axis_plane.mdl")               
+        holoCreate(3, Self:toWorld(vec()),vec(1),Self:toWorld(ang()))  
+        holoModel(3, "models/sprops/misc/bone_from_x.mdl")
+        holoCreate(4, HAxis:toWorld(HAxis_Offset),vec(10,10,0.1),Self:toWorld(ang(0,GunAng:yaw(),0)))
+        holoModel(4, "models/sprops/cylinders/size_5/cylinder_12x3.mdl")
+        holoColor(4, vec4(0,255,0,200))        
+        holoCreate(5, VAxis:toWorld(VAxis_Offset),vec(10,10,0.1),Gun:angles():setRoll(-90))  
+        holoModel(5, "models/sprops/cylinders/size_5/cylinder_12x3.mdl")
+        holoColor(5, vec4(255,0,0,200))
+    }else{
+        deparentAll()
+        timer("parent", 240)
+    }
+    
+    Filter = Gun:getConnectedEntities() #    Filter = array(Gun, HAxis, VAxis, Gate_Base, Gate_Gun):add(Gun:getConnectedEntities())
+    
+    if(->Cam){  
+    camSetup(Cam, Filter)
+    }
+    
+    if(MaxDepressions:count()==1){
+    MaxDepression = MaxDepressions[1,number]    
+    }
+    
+}elseif(Debug == 0 & ->Chair){ 
+        if(clk("parent")){
+            parentToHolos()
+        }
+        if(Active){           
+            if(Vec){
+                AimPos = Vec  
+                Unlock = 1
+            }else{  
+                event keyPressed(Player:entity, Key:string, Down:number, _:string) {
+                    if(Player==Driver){
+                        if(Down){                        
+                            switch(Key){
+                            case "mouse_wheel_up",
+                                FOV = clamp(FOV-5, FOV_Min, FOV_Max)                            
+                            break
+                            case "mouse_wheel_down",
+                                FOV = clamp(FOV+5, FOV_Min, FOV_Max)                           
+                            break
+                            case "lcontrol",
+                                CamNum += 1
+                                CamNum = CamNum % Cameras:count()  
+                            break
+                            case "f",
+                                Unlock = !Unlock 
+                            break
+                            }    
+                        }    
+                    }    
+                }
+                if(changed(CamNum)|FOV_Max==0){
+                    FOV_Min = Cameras[CamNum+1,array][3, number]
+                    FOV_Max = FOV = Cameras[CamNum+1,array][4, number]
+                }     
+                cam(Cam, Cameras, CamNum, FOV)
+                AimPos = Cam["HitPos", vector]
+            }
+            
+            GunDir = (AimPos-Gun:massCenter()):normalized()      
+    
+            if(Unlock == 1){        
+                
+                GunAng = angnorm(clamp(GunAng - clamp(heading(vec(), GunAng, Self:toLocalAxis(GunDir)), -RotateSpeed, RotateSpeed), ang(-MaxElevation, -MinYaw, 0), ang(MaxDepression, MaxYaw, 0)))
+
+                local PlaySound = round(Gun:toLocal(angnorm((AimPos-Gun:massCenter()):normalized():toAngle())))
+                if(changed(PlaySound)){soundVolume("Move",100)}else{soundVolume("Move",0)}
+                
+                GunYaw = Self:toWorld(ang(0, clamp(GunAng:yaw(), -MinYaw,MaxYaw), 0))
+                holoAng(1, GunYaw)
+                
+                GunPitch = ang(clamp(GunAng:pitch(), -MaxElevation, MaxDepression), 0, 0)
+                holoAng(2, holoEntity(1):toWorld(GunPitch))
+                
+                if(MaxDepressions:count()>1){
+                Arch  = abs(angnorm(Self:toLocal(GunYaw)):yaw())
+                    if(changed(Arch)){
+                    if(Arch<DepressionAngles[1,number]){SetDepression=MaxDepressions[1,number]}   
+                    if(Arch>DepressionAngles[1,number]&Arch<DepressionAngles[2,number]){SetDepression=MaxDepressions[2,number]}   
+                    if(Arch>DepressionAngles[2,number]&Arch<DepressionAngles[3,number]){SetDepression=MaxDepressions[3,number]}   
+                    if(Arch>DepressionAngles[3,number]){SetDepression=MaxDepressions[4,number]}
+                    }
+                    if(MaxDepression>SetDepression|MaxDepression<SetDepression){MaxDepression=MaxDepression-((MaxDepression-SetDepression)/1.25)}   
+                }
+        
+            }else{
+                soundVolume("Move",0)    
+            }    
+            interval(Interval)
+            Ops=ops()
+        }
+}
+
+    event playerEnteredVehicle(Player:entity, Vehicle:entity) {
+        if(Vehicle==Chair){
+            Unlock = 0 
+            Cam["Activated", number] = Active_Out = 1 
+            Self:soundPlay("Move",0,MoveSound)
+            soundVolume("Move",0) 
+            
+            Driver = Player
+            Active = 1
+            interval(Interval) 
+        }    
+    }
+    
+    event playerLeftVehicle(_:entity, Vehicle:entity) {
+        if(Vehicle==Chair){
+            Unlock = 0 
+            Cam["Activated", number] = Active_Out = 0
+
+            soundVolume("Move",0)
+            Active = 0
+            Driver = noentity()   
+        }    
+    }
+
+    event removed(Resetting:number) {
+        
+        if(Resetting){  
+                  
+            parentToSelf()
+            
+        }else{
+         
+            deparentAll()
+           
+        }
+        
+    }
