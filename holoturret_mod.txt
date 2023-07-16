@@ -38,15 +38,15 @@ if(first() | dupefinished()){
                     )
                     
     local HAxis_Offset = vec(0, 0, 0) #Horizontal Axis Offset
-    local VAxis_Offset = vec(18.2, 0, 0) #Vertical Axis Offset
-    Interval        = 60 # Better rotation but with more Ops
-    MaxElevation    = 18 #---How High you can aim up (in degrees)---#
-    MaxDepressions  = array(5, 2, 4, 2) #---How Low you can aim down (in degrees) [Front,Side,Rear]---#
-    DepressionAngles  = array(20, 45, 130) #---Areas where depresions are set [0-[1st index]->1-[2st index]->2-[3st index]->3-[4st index]->]---#
-    MinYaw          = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
-    MaxYaw          = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
-    RotateSpeed     = 90 #---Turret Rotation Speed in Degrees per Second---#  
-    MoveSound       = "acf_extra/tankfx/servo_2.wav" #"d3_citadel.podarm_move" #---Sound that e2 makes when rotating turret---#    
+    local VAxis_Offset = vec(0, 0, 0) #Vertical Axis Offset
+    Interval           = 60 # Better rotation but with more Ops
+    MaxElevation       = 20 #---How High you can aim up (in degrees)---#
+    MaxDepressions     = array(1) #array(5, 2, 4, 2) #---How Low you can aim down (in degrees) [Front,Side,Rear]---#
+    DepressionAngles   = array(20, 45, 130) #---Areas where depresions are set [0-[1st index]->1-[2st index]->2-[3st index]->3-[4st index]->180]---#
+    MinYaw             = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
+    MaxYaw             = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
+    RotateSpeed        = 90 #---Turret Rotation Speed in Degrees per Second---#  
+    MoveSound          = "d3_citadel.podarm_move" #---Sound that e2 makes when rotating turret---#    
     # END Settings 
         
     #  -DO NOT TOUCH ANYTHING ELSE UNDER THIS.
@@ -179,10 +179,10 @@ if(first() | dupefinished()){
                         if(Down){                        
                             switch(Key){
                             case "mouse_wheel_up",
-                                FOV = clamp(FOV-5, FOV_Min, FOV_Max)                            
+                                FOV = clamp(FOV-10, FOV_Min, FOV_Max)                            
                             break
                             case "mouse_wheel_down",
-                                FOV = clamp(FOV+5, FOV_Min, FOV_Max)                           
+                                FOV = clamp(FOV+10, FOV_Min, FOV_Max)                           
                             break
                             case "lcontrol",
                                 CamNum += 1
