@@ -189,6 +189,7 @@ if(first() | dupefinished()){
                             break
                             case "f",
                                 Unlock = !Unlock
+                                Fire = 0
                                 Active_Out = Unlock
                             break 
                             case "lalt",
