@@ -1,13 +1,12 @@
 @name Holoturret mod
-@inputs [Gun Gun1 Gun2 HAxis VAxis Gate_Base Gate_Gun Chair]:entity [Cam]:wirelink Vec:vector #[Podmiana AimPosa Dziala]#
+@inputs [Gun Gun1 Gun2 HAxis VAxis Gate_Base Gate_Gun Chair]:entity [Cam]:wirelink Vec:vector #[Podmiana AimPosa Dziala]# Active_In
 @persist FOV FOV_Max FOV_Min Interval Cameras:table CamNum MoveSound:string
-@outputs Ops Arch MaxDepression
-@outputs [Self]:entity
-@outputs [Filter]:array AimPos:vector Active_Out
-@persist [GunAng]:angle AimPos:vector
+@outputs Ops Vect:vector Fire
+@outputs AimPos:vector Active_Out
+@persist [GunAng]:angle [AimPos Stabilisation]:vector [Self]:entity [Filter]:array LockAim
 @persist MaxElevation MaxDepression SetDepression [MaxDepressions DepressionAngles]:array MinYaw MaxYaw RotateSpeed Unlock Active Driver:entity
 @persist Debug 
-
+@trigger Active_In
 
 #[
 
@@ -19,15 +18,17 @@ It works :)
 
 Uhhhh thats all about it
 
+Expression2 is fucking shit, like its so fucking trash that there are no words to say how bad it is
+ 
+It works now :)
+
 STEAM_0:0:107514807 
 
 ]#
 
 
 if(first() | dupefinished()){
-    
     # Settings
-
     Debug = 0
                     #Cameras                
                     #                              entity, vector,                   number,      number,      number,   number
@@ -41,14 +42,14 @@ if(first() | dupefinished()){
     local VAxis_Offset = vec(0, 0, 0) #Vertical Axis Offset
     Interval           = 60 # Better rotation but with more Ops
     MaxElevation       = 20 #---How High you can aim up (in degrees)---#
-    MaxDepressions     = array(1) #array(5, 2, 4, 2) #---How Low you can aim down (in degrees) [Front,Side,Rear]---#
+    MaxDepressions     = array(5, 2, 4, 2) #---How Low you can aim down (in degrees) [Front,Side,Rear]---#
     DepressionAngles   = array(20, 45, 130) #---Areas where depresions are set [0-[1st index]->1-[2st index]->2-[3st index]->3-[4st index]->180]---#
     MinYaw             = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
     MaxYaw             = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
     RotateSpeed        = 90 #---Turret Rotation Speed in Degrees per Second---#  
     MoveSound          = "d3_citadel.podarm_move" #---Sound that e2 makes when rotating turret---#    
+    Stabilisation      = vec(1,1,1)
     # END Settings 
-        
     #  -DO NOT TOUCH ANYTHING ELSE UNDER THIS.
     #--------------------------------------------------------------------------------------------------------------#
             
@@ -165,19 +166,17 @@ if(first() | dupefinished()){
     MaxDepression = MaxDepressions[1,number]    
     }
     
-}elseif(Debug == 0 & ->Chair){ 
+}elseif(Debug == 0&((->Chair&->Cam)|(->Vec|->Active_In))){ 
         if(clk("parent")){
             parentToHolos()
-        }
-        if(Active){           
-            if(Vec){
-                AimPos = Vec  
-                Unlock = 1
-            }else{  
-                event keyPressed(Player:entity, Key:string, Down:number, _:string) {
-                    if(Player==Driver){
-                        if(Down){                        
-                            switch(Key){
+        }          
+        if(->Vec){
+            AimPos = Vec  
+        }elseif(->Chair&->Cam&Active){
+            event keyPressed(Player:entity, Key:string, Down:number, _:string) {
+                if(Player==Driver){ 
+                    if(Down){                      
+                        switch(Key){
                             case "mouse_wheel_up",
                                 FOV = clamp(FOV-10, FOV_Min, FOV_Max)                            
                             break
@@ -189,37 +188,68 @@ if(first() | dupefinished()){
                                 CamNum = CamNum % Cameras:count()  
                             break
                             case "f",
-                                Unlock = !Unlock 
+                                Unlock = !Unlock
+                                Active_Out = Unlock
+                            break 
+                            case "lalt",
+                                LockAim = 1
+                            break       
+                            case "mouse_left",
+                                if(Unlock==1){
+                                Fire = 1    
+                                }
+                            break       
+                        }   
+                    }else{
+                        switch(Key){
+                            case "lalt",
+                                LockAim = 0
                             break
-                            }    
+                            case "mouse_left",
+                                if(Unlock==1){
+                                Fire = 0    
+                                }
+                            break                               
                         }    
-                    }    
-                }
-                if(changed(CamNum)|FOV_Max==0){
-                    FOV_Min = Cameras[CamNum+1,array][3, number]
-                    FOV_Max = FOV = Cameras[CamNum+1,array][4, number]
-                }     
-                cam(Cam, Cameras, CamNum, FOV)
-                AimPos = Cam["HitPos", vector]
+                    } 
+                }   
             }
+            if(changed(CamNum)|FOV_Max==0){
+                FOV_Min = Cameras[CamNum+1,array][3, number]
+                FOV_Max = FOV = Cameras[CamNum+1,array][4, number]
+            }     
+            cam(Cam, Cameras, CamNum, FOV)
+            if(!LockAim){
+            AimPos = Cam["HitPos", vector]
+            }
+        }
             
-            GunDir = (AimPos-Gun:massCenter()):normalized()      
-    
-            if(Unlock == 1){        
-                
+        if(Active|Active_In){
+            if(!LockAim){
+                if(Gun:acfMuzzleVel()>0){
+                    local T = ((Gun:pos():distance(AimPos)*1.27) / 39.3701) / (Gun:acfMuzzleVel())         
+                    local Drift = (Gun:vel() * T) * Stabilisation
+                    local Drop = (4.9 * T^2) * 39.3701 
+                    Vect = -Drift+vec(0,0,Drop)
+                    GunDir = ((AimPos+Vect)-Gun:massCenter()):normalized()  
+                }else{   
+                    GunDir = ((AimPos)-Gun:massCenter()):normalized()      
+                }
+            }
+            if(Unlock == 1|Active_In){        
                 GunAng = angnorm(clamp(GunAng - clamp(heading(vec(), GunAng, Self:toLocalAxis(GunDir)), -RotateSpeed, RotateSpeed), ang(-MaxElevation, -MinYaw, 0), ang(MaxDepression, MaxYaw, 0)))
 
                 local PlaySound = round(Gun:toLocal(angnorm((AimPos-Gun:massCenter()):normalized():toAngle())))
                 if(changed(PlaySound)){soundVolume("Move",100)}else{soundVolume("Move",0)}
-                
+
                 GunYaw = Self:toWorld(ang(0, clamp(GunAng:yaw(), -MinYaw,MaxYaw), 0))
                 holoAng(1, GunYaw)
-                
+
                 GunPitch = ang(clamp(GunAng:pitch(), -MaxElevation, MaxDepression), 0, 0)
                 holoAng(2, holoEntity(1):toWorld(GunPitch))
-                
+
                 if(MaxDepressions:count()>1){
-                Arch  = abs(angnorm(Self:toLocal(GunYaw)):yaw())
+                    local Arch = abs(angnorm(Self:toLocal(GunYaw)):yaw())
                     if(changed(Arch)){
                     if(Arch<DepressionAngles[1,number]){SetDepression=MaxDepressions[1,number]}   
                     if(Arch>DepressionAngles[1,number]&Arch<DepressionAngles[2,number]){SetDepression=MaxDepressions[2,number]}   
@@ -228,49 +258,37 @@ if(first() | dupefinished()){
                     }
                     if(MaxDepression>SetDepression|MaxDepression<SetDepression){MaxDepression=MaxDepression-((MaxDepression-SetDepression)/1.25)}   
                 }
-        
             }else{
                 soundVolume("Move",0)    
-            }    
+            }   
             interval(Interval)
             Ops=ops()
         }
 }
-
     event playerEnteredVehicle(Player:entity, Vehicle:entity) {
-        if(Vehicle==Chair){
-            Unlock = 0 
-            Cam["Activated", number] = Active_Out = 1 
-            Self:soundPlay("Move",0,MoveSound)
-            soundVolume("Move",0) 
-            
-            Driver = Player
-            Active = 1
-            interval(Interval) 
-        }    
-    }
-    
+            if(Vehicle==Chair&->Chair){
+                Unlock = 0 
+                Cam["Activated", number] = 1
+                Self:soundPlay("Move",0,MoveSound)
+                soundVolume("Move",0) 
+                Driver = Player
+                Active = 1
+                interval(Interval)
+            }   
+    }  
     event playerLeftVehicle(_:entity, Vehicle:entity) {
-        if(Vehicle==Chair){
-            Unlock = 0 
-            Cam["Activated", number] = Active_Out = 0
-
-            soundVolume("Move",0)
-            Active = 0
-            Driver = noentity()   
-        }    
+            if(Vehicle==Chair&->Chair){
+                Unlock = 0 
+                Cam["Activated", number] = Active_Out = 0
+                soundVolume("Move",0)
+                Driver = noentity()   
+                Active = 0
+            }    
     }
-
     event removed(Resetting:number) {
-        
         if(Resetting){  
-                  
             parentToSelf()
-            
         }else{
-         
             deparentAll()
-           
         }
-        
     }
