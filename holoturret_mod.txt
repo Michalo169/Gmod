@@ -1,7 +1,7 @@
 @name Holoturret mod
-@inputs [Gun Gun1 Gun2 HAxis VAxis Gate_Base Gate_Gun Chair]:entity [Cam]:wirelink Vec:vector #[Podmiana AimPosa Dziala]# Active_In
+@inputs [Gun HAxis VAxis Gate_Base Gate_Gun Chair]:entity [Cam]:wirelink Vec:vector #[Podmiana AimPosa Dziala]# Active_In
 @persist FOV FOV_Max FOV_Min Interval Cameras:table CamNum MoveSound:string
-@outputs Ops Vect:vector Fire
+@outputs Ops Vect:vector Fire Fire1
 @outputs AimPos:vector Active_Out
 @persist [GunAng]:angle [AimPos Stabilisation]:vector [Self]:entity [Filter]:array LockAim
 @persist MaxElevation MaxDepression SetDepression [MaxDepressions DepressionAngles]:array MinYaw MaxYaw RotateSpeed Unlock Active Driver:entity
@@ -38,37 +38,37 @@ if(first() | dupefinished()){
                     array(entity(), vec(-80,0,30), 5, 90, 100, 1)
                     )
                     
-    local HAxis_Offset = vec(0, 0, 0) #Horizontal Axis Offset
-    local VAxis_Offset = vec(0, 0, 0) #Vertical Axis Offset
+    local HAxis_Offset = vec(0, 0, 0) #---Horizontal Axis Offset---#
+    local VAxis_Offset = vec(0, 0, 0) #---Vertical Axis Offset---#
     Interval           = 60 # Better rotation but with more Ops
     MaxElevation       = 20 #---How High you can aim up (in degrees)---#
-    MaxDepressions     = array(5, 2, 4, 2) #---How Low you can aim down (in degrees) [Front,Side,Rear]---#
+    MaxDepressions     = array(15, 2, 12, 8) #---How Low you can aim down (in degrees) [Front,Side,Rear]---#
     DepressionAngles   = array(20, 45, 130) #---Areas where depresions are set [0-[1st index]->1-[2st index]->2-[3st index]->3-[4st index]->180]---#
     MinYaw             = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
     MaxYaw             = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
     RotateSpeed        = 90 #---Turret Rotation Speed in Degrees per Second---#  
     MoveSound          = "d3_citadel.podarm_move" #---Sound that e2 makes when rotating turret---#    
-    Stabilisation      = vec(1,1,1) # Stabilisation vec(0,0,1) - vertical, vec(1) - full, vec(0) - no stabilisation
+    Stabilisation      = vec(1,1,1) #---Stabilisation vec(0,0,1) - vertical, vec(1) - full, vec(0) - no stabilisation---#
     # END Settings 
     #  -DO NOT TOUCH ANYTHING ELSE UNDER THIS.
     #--------------------------------------------------------------------------------------------------------------#
-            
+
     RotateSpeed /= 20
     Unlock = CamNum = MaxDepression = Active = FOV_Min = FOV_Max = 0
     Driver = noentity()   
     FOV = 90
     Self    = entity()   
     GunAng  = Self:toLocal(Gun:angles())
-    
+
     holoCreate(1,HAxis:toWorld(HAxis_Offset),vec(1),Self:toWorld(ang(0,GunAng:yaw(),0)))
     holoAlpha(1,255*Debug)
 
     holoCreate(2,VAxis:toWorld(VAxis_Offset),vec(1),Gun:angles():setRoll(0))  
     holoAlpha(2,255*Debug)
-    
+
     holoParent(1,Self)
     holoParent(2,1)   
-        
+
     function camSetup(W:wirelink,FilterEnts:array){
         W["FilterEntities",array] = FilterEnts
         local Flags = array(
@@ -113,9 +113,7 @@ if(first() | dupefinished()){
     function parentToSelf(){
         Gate_Base:parentTo(Self)      
         Gate_Gun:parentTo(Self)      
-        Gun:parentTo(Self)      
-        Gun1:parentTo(Self)    
-        Gun2:parentTo(Self)    
+        Gun:parentTo(Self)         
         VAxis:parentTo(Self)    
         HAxis:parentTo(Self) 
     }
@@ -126,8 +124,6 @@ if(first() | dupefinished()){
         Gate_Gun:parentTo(holoEntity(2)) 
         Gate_Base:parentTo(holoEntity(1)) 
         Gun:parentTo(holoEntity(2))
-        Gun1:parentTo(holoEntity(2))
-        Gun2:parentTo(holoEntity(2))
     }
     
     function deparentAll(){
@@ -136,8 +132,6 @@ if(first() | dupefinished()){
         Gate_Gun:deparent()
         Gate_Base:deparent()
         Gun:deparent()
-        Gun1:deparent()
-        Gun2:deparent()
     }
 
     if(Debug){
@@ -189,7 +183,7 @@ if(first() | dupefinished()){
                             break
                             case "f",
                                 Unlock = !Unlock
-                                Fire = 0
+                                Fire = Fire1 = 0
                                 Active_Out = Unlock
                             break 
                             case "lalt",
@@ -198,6 +192,11 @@ if(first() | dupefinished()){
                             case "mouse_left",
                                 if(Unlock==1){
                                 Fire = 1    
+                                }
+                            break            
+                            case "mouse_right",
+                                if(Unlock==1){
+                                Fire1 = 1    
                                 }
                             break            
                         }   
@@ -209,6 +208,11 @@ if(first() | dupefinished()){
                             case "mouse_left",
                                 if(Unlock==1){
                                 Fire = 0    
+                                }
+                            break                               
+                            case "mouse_right",
+                                if(Unlock==1){
+                                Fire1 = 0    
                                 }
                             break                               
                         }    
@@ -250,14 +254,14 @@ if(first() | dupefinished()){
                 holoAng(2, holoEntity(1):toWorld(GunPitch))
 
                 if(MaxDepressions:count()>1){
-                    local Arch = abs(angnorm(Self:toLocal(GunYaw)):yaw())
-                    if(changed(Arch)){
-                    if(Arch<DepressionAngles[1,number]){SetDepression=MaxDepressions[1,number]}   
-                    if(Arch>DepressionAngles[1,number]&Arch<DepressionAngles[2,number]){SetDepression=MaxDepressions[2,number]}   
-                    if(Arch>DepressionAngles[2,number]&Arch<DepressionAngles[3,number]){SetDepression=MaxDepressions[3,number]}   
-                    if(Arch>DepressionAngles[3,number]){SetDepression=MaxDepressions[4,number]}
+                    local Yaw = abs(angnorm(Self:toLocal(GunYaw)):yaw())
+                    if(changed(Yaw)){
+                        if(Yaw < DepressionAngles[1, number]){SetDepression = MaxDepressions[1, number]
+                        }elseif(Yaw < DepressionAngles[2, number]){SetDepression = MaxDepressions[2, number]
+                        }elseif(Yaw < DepressionAngles[3, number]){SetDepression = MaxDepressions[3, number]
+                        }else{SetDepression = MaxDepressions[4, number]}
                     }
-                    if(MaxDepression>SetDepression|MaxDepression<SetDepression){MaxDepression=MaxDepression-((MaxDepression-SetDepression)/1.25)}   
+                    MaxDepression = lerp(MaxDepression, SetDepression, 0.8)
                 }
             }else{
                 soundVolume("Move",0)    
@@ -280,7 +284,7 @@ if(first() | dupefinished()){
     event playerLeftVehicle(_:entity, Vehicle:entity) {
             if(Vehicle==Chair&->Chair){
                 Unlock = 0 
-                Cam["Activated", number] = Active_Out = Fire =  0
+                Cam["Activated", number] = Active_Out = Fire = Fire1 = 0
                 soundVolume("Move",0)
                 Driver = noentity()   
                 Active = 0
