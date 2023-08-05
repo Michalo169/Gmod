@@ -4,9 +4,7 @@
 
 --[[
 
-Version 1.0
-
-MAKE SURE THAT YOUR BUILD IS FACING NORTH
+Version 1.1
 
 This SF just works
 
@@ -23,11 +21,14 @@ STEAM_0:0:107514807
 if SERVER then
     
     wire.adjustInputs(
-        {"Wheels","Base","Key"},
-        {"array","entity","number"}
+        {"Wheels1","Wheels2","Key"},
+        {"array","array","number"}
         )
 
-    local Wheels = wire.ports.Wheels
+    local Wheels = wire.ports.Wheels1
+    local Wheels1 = wire.ports.Wheels2
+
+    constraint.setConstraintClean(false)
 
     if wire.ports.Key == 1 then
         
@@ -36,6 +37,20 @@ if SERVER then
             if Num > 1 then
                 
             constraint.ballsocketadv(Wheels[1], v, nil, nil, Vector(0,0,0), Vector(0,0,0), nil, nil, Vector(-0.01,-180,-180), Vector(0.01,180,180), Vector(0), true, true)
+            
+            end
+            
+        end
+        
+    end 
+    
+    if wire.ports.Key == 1 then
+        
+        for Num,v in ipairs(Wheels1) do
+            
+            if Num > 1 then
+                
+            constraint.ballsocketadv(Wheels1[1], v, nil, nil, Vector(0,0,0), Vector(0,0,0), nil, nil, Vector(-0.01,-180,-180), Vector(0.01,180,180), Vector(0), true, true)
             
             end
             
