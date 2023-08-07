@@ -1,14 +1,15 @@
 @name Holoturret mod
 @inputs [Gun HAxis VAxis Gate_Base Gate_Gun Chair]:entity [Cam]:wirelink Vec:vector #[Podmiana AimPosa Dziala]# Active_In
-@persist FOV FOV_Max FOV_Min Interval Cameras:table CamNum MoveSound:string
-@outputs Ops Vect:vector Fire Fire1
+@persist FOV FOV_Max FOV_Min  CamNum 
+@outputs Ops Correction:vector Fire Fire1
 @outputs AimPos:vector Active_Out
-@persist [GunAng]:angle [AimPos Stabilisation]:vector [Self]:entity [Filter]:array LockAim
-@persist MaxElevation MaxDepression SetDepression [MaxDepressions DepressionAngles]:array MinYaw MaxYaw RotateSpeed Unlock Active Driver:entity
-@persist Debug 
+@persist [GunAng Offset]:angle [AimPos]:vector [Self]:entity [Filter]:array LockAim
+@persist SetDepression MaxDepression Unlock Active Driver:entity
+@persist Debug Cameras:table Interval MaxElevation [MaxDepressions DepressionAngles]:array MinYaw MaxYaw RotateSpeed MoveSound:string Stabilisation:vector Balistic_Correction Cam_Mode #[Settings]#  
 @trigger Active_In
 
 #[
+1.0.1
 
 This Expression2 is edit of "GG5 as holoturret" made by CDU
 
@@ -31,49 +32,63 @@ if(first() | dupefinished()){
     # Settings
     Debug = 0
                     #Cameras                
-                    #                              entity, vector,                   number,      number,      number,   number
-    Cameras = table(#Parent must be defined first [Parent, Position local to parent, Minimal FOV, Maximum FOV, Distance, DrawPlayer]
-                    array(Chair, vec(0,3,48), 5, 90, 0, 0),
-                    array(Gun, vec(-50,0,30), 5, 90, 25, 1),
-                    array(entity(), vec(-80,0,30), 5, 90, 100, 1)
+                    #                              entity, vector,                    vector2,     number,       number,   number
+    Cameras = table(#Parent must be defined first [Parent, Position local to parent, (Minimal FOV, Maximum FOV), Distance, DrawPlayer]
+                    #array(Chair, vec(0,3,48),      ang(), vec2(5, 90),   0, 0),
+                    array(Gun, vec(24,10,0),       ang(), vec2(5, 90),  25, 1)
+                    #array(entity(), vec(-80,0,30), ang(), vec2(5, 90), 100, 1)
                     )
                     
-    local HAxis_Offset = vec(0, 0, 0) #---Horizontal Axis Offset---#
-    local VAxis_Offset = vec(0, 0, 0) #---Vertical Axis Offset---#
-    Interval           = 60 # Better rotation but with more Ops
-    MaxElevation       = 20 #---How High you can aim up (in degrees)---#
-    MaxDepressions     = array(15, 2, 12, 8) #---How Low you can aim down (in degrees) [Front,Side,Rear]---#
-    DepressionAngles   = array(20, 45, 130) #---Areas where depresions are set [0-[1st index]->1-[2st index]->2-[3st index]->3-[4st index]->180]---#
-    MinYaw             = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
-    MaxYaw             = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
-    RotateSpeed        = 90 #---Turret Rotation Speed in Degrees per Second---#  
-    MoveSound          = "d3_citadel.podarm_move" #---Sound that e2 makes when rotating turret---#    
-    Stabilisation      = vec(1,1,1) #---Stabilisation vec(0,0,1) - vertical, vec(1) - full, vec(0) - no stabilisation---#
+                    #Example
+                    #array(Gun,     vec(24,10,0),  ang(), vec2(5, 90),  25, 1), <---- remember to add comma(,)
+                    #array(entity(), vec(0,0,50),  ang(), vec2(5, 90), 100, 1)
+                    
+    local HAxis_Offset  = vec(0, 0, 0) #---Horizontal Axis Offset---#
+    local VAxis_Offset  = vec(0, 0, 0) #---Vertical Axis Offset---#
+    Interval            = 60 #---Better rotation but with more Ops---#
+    MaxElevation        = 20 #---How High you can aim up (in degrees)---#
+    MaxDepressions      = array(15, 2, 12, 8) #---How Low you can aim down (in degrees) [Front,Side,Rear]---#
+    DepressionAngles    = array(20, 45, 130) #---Areas where depresions are set [0-[1st index]->1-[2st index]->2-[3st index]->3-[4st index]->180]---#
+    MinYaw              = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
+    MaxYaw              = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
+    RotateSpeed         = 60 #---Turret Rotation Speed in Degrees per Second---#  
+    MoveSound           = "d3_citadel.podarm_move" #---Sound that e2 makes when rotating turret---#    
+    Stabilisation       = vec(0) #---Stabilisation [vec(0,0,1) - vertical, vec(1,1,0) - horizontal, vec(1) - full, vec(0) - no stabilisation]---#
+    Balistic_Correction = 1 #---0 - OFF, 1 - ON---#
+    Cam_Mode            = 0 #---0 - Realistic Camera, 1 - Arcade Camera ---#
     # END Settings 
     #  -DO NOT TOUCH ANYTHING ELSE UNDER THIS.
     #--------------------------------------------------------------------------------------------------------------#
 
-    RotateSpeed /= 20
-    Unlock = CamNum = MaxDepression = Active = FOV_Min = FOV_Max = 0
-    Driver = noentity()   
-    FOV = 90
-    Self    = entity()   
-    GunAng  = Self:toLocal(Gun:angles())
-
+    RotateSpeed /= 10
+    MaxElevation = abs(MaxElevation),MaxYaw = abs(MaxYaw),MinYaw = abs(MinYaw),RotateSpeed = abs(RotateSpeed)
+    Unlock       = CamNum = MaxDepression = Active = FOV_Min = FOV_Max = 0
+    Driver       = noentity()   
+    FOV          = Cameras[1,array][4,vector2]:y()
+    Self         = entity()   
+    GunAng       = Self:toLocal(Gun:angles())
+    Offset       = ang()
+    Cam_Mode     = clamp(round(Cam_Mode),0,1)
+    
+    if(Cam_Mode==0){
+    holoCreate(0)
+    holoAlpha(0,255*Debug),holoShadow(0,0)
+    }
+    
     holoCreate(1,HAxis:toWorld(HAxis_Offset),vec(1),Self:toWorld(ang(0,GunAng:yaw(),0)))
-    holoAlpha(1,255*Debug)
+    holoAlpha(1,255*Debug),holoShadow(1,0)
 
     holoCreate(2,VAxis:toWorld(VAxis_Offset),vec(1),Gun:angles():setRoll(0))  
-    holoAlpha(2,255*Debug)
+    holoAlpha(2,255*Debug),holoShadow(2,0)
 
     holoParent(1,Self)
     holoParent(2,1)   
 
-    function camSetup(W:wirelink,FilterEnts:array){
+    function camSetup(W:wirelink,Mode,FilterEnts:array){
         W["FilterEntities",array] = FilterEnts
         local Flags = array(
         14 = 0, #ParentLocal
-        15 = 1, #AutoMove
+        15 = Mode, #AutoMove
         16 = 0, #FreeMove
         17 = 0, #LocalMove
         18 = 0, #AllowZoom
@@ -87,24 +102,40 @@ if(first() | dupefinished()){
         }        
     }
     
-    function cam(W:wirelink, T:table, Num, FieldOfView){
+    function cam(W:wirelink, T:table, Num, FieldOfView, Mode){
         local Array = T[Num+1, array]    
             
         if(changed(Num)){
             local Parent          = Array[1, entity]
             local Pos             = Array[2, vector]  
-            local FOV_Max         = Array[4, number]   
-            local Dist            = Array[6, number]  
-            local DrawPlayer      = Array[7, number]  
+            local Ang             = Array[3, angle]  
+            local FOV_Max         = Array[4, vector2]:y()   
+            local Dist            = Array[5, number]  
+            local DrawPlayer      = Array[6, number]  
 
-            W["Parent", entity]   = Parent
-            W["Position", vector] = Parent:toWorld(Pos)
-            W["Distance", number] = Dist
-            W["FOV", number]      = FOV_Max
-            W[21]                 = DrawPlayer #player 
-            W[18] = 0 #scoll            
-                        
+            if(Mode==0){
+                holoParent(0,Parent)
+                holoPos(0,Parent:toWorld(Pos))
+                holoAng(0,Parent:toWorld(Ang)) 
+                W["Parent", entity]   = holoEntity(0)
+                W["Position", vector] = holoEntity(0):toWorld(vec())
+                W["Angle", angle]     = holoEntity(0):toWorld(ang())
+                W["Distance", number] = Dist
+                W["FOV", number]      = FOV_Max
+                W[21]                 = DrawPlayer #player 
+                W[18] = 0 #scoll   
+            }else{
+                W["Parent", entity]   = Parent
+                W["Position", vector] = Parent:toWorld(Pos)
+                W["Angle", angle]     = Parent:toWorld(Ang)
+                W["Distance", number] = Dist
+                W["FOV", number]      = FOV_Max
+                W[21]                 = DrawPlayer #player 
+                W[18] = 0 #scoll           
+            }
+                       
             FieldOfView = FOV_Max
+            
         }elseif(changed(FieldOfView)){
             W["FOV",number] = FieldOfView         
         }   
@@ -145,6 +176,7 @@ if(first() | dupefinished()){
         holoCreate(5, VAxis:toWorld(VAxis_Offset),vec(10,10,0.1),Gun:angles():setRoll(-90))  
         holoModel(5, "models/sprops/cylinders/size_5/cylinder_12x3.mdl")
         holoColor(5, vec4(255,0,0,200))
+        deparentAll()
     }else{
         deparentAll()
         timer("parent", 240)
@@ -153,7 +185,9 @@ if(first() | dupefinished()){
     Filter = Gun:getConnectedEntities() #    Filter = array(Gun, HAxis, VAxis, Gate_Base, Gate_Gun):add(Gun:getConnectedEntities())
     
     if(->Cam){  
-    camSetup(Cam, Filter)
+    camSetup(Cam, Cam_Mode, Filter)
+    rangerPersist(1)
+    rangerFilter(Filter)
     }
     
     if(MaxDepressions:count()==1){
@@ -178,8 +212,10 @@ if(first() | dupefinished()){
                                 FOV = clamp(FOV+10, FOV_Min, FOV_Max)                           
                             break
                             case "lcontrol",
-                                CamNum += 1
-                                CamNum = CamNum % Cameras:count()  
+                                if(Cameras:count()>1){
+                                    CamNum += 1
+                                    CamNum = CamNum % Cameras:count()  
+                                }
                             break
                             case "f",
                                 Unlock = !Unlock
@@ -220,24 +256,32 @@ if(first() | dupefinished()){
                 }   
             }
             if(changed(CamNum)|FOV_Max==0){
-                FOV_Min = Cameras[CamNum+1,array][3, number]
-                FOV_Max = FOV = Cameras[CamNum+1,array][4, number]
+                FOV_Min = Cameras[CamNum+1,array][4, vector2]:x()
+                FOV_Max = FOV = Cameras[CamNum+1,array][4, vector2]:y()
             }     
-            cam(Cam, Cameras, CamNum, FOV)
+            cam(Cam, Cameras, CamNum, FOV, Cam_Mode)
             if(!LockAim){
-            AimPos = Cam["HitPos", vector]
+                if(Cam_Mode==1){
+                    AimPos = Cam["HitPos", vector]   
+                }else{
+                    local Direction = angnorm(Driver:eyeAnglesVehicle())
+                    local Clamped_Angle = clamp(Direction+Offset,ang(-MaxElevation,-MinYaw,0):setRoll(-0),ang(MaxDepressions:max(),MaxYaw,0):setRoll(0))
+                    Offset = (Clamped_Angle - Direction)
+                    local Ranger = rangerOffset(99999,Cam["CamPos",vector],entity():toWorld(Direction+Offset):forward())
+                    AimPos = Ranger:pos() 
+                }
             }
         }
             
         if(Active|Active_In){
             if(!LockAim){
-                if(Gun:acfMuzzleVel()>0){
+                if(Gun:acfMuzzleVel()>0&Balistic_Correction==1){
                     local T = ((Gun:pos():distance(AimPos)*1.27) / 39.3701) / (Gun:acfMuzzleVel())         
                     local Drift = (Gun:vel() * T) * Stabilisation
-                    local Drop = (4.9 * T^2) * 39.3701 
-                    Vect = -Drift+vec(0,0,Drop)
-                    GunDir = ((AimPos+Vect)-Gun:massCenter()):normalized()  
-                }else{   
+                    local Drop = (4.9 * T^2) * 39.3701
+                    Correction = -Drift+vec(0,0,Drop)
+                    GunDir = ((AimPos+Correction)-Gun:massCenter()):normalized()
+                }else{
                     GunDir = ((AimPos)-Gun:massCenter()):normalized()      
                 }
             }
@@ -252,7 +296,9 @@ if(first() | dupefinished()){
 
                 GunPitch = ang(clamp(GunAng:pitch(), -MaxElevation, MaxDepression), 0, 0)
                 holoAng(2, holoEntity(1):toWorld(GunPitch))
-
+                
+                holoAng(0,holoEntity(0):parent():toWorld(ang(-(GunDir:toAngle():pitch()-(AimPos-holoEntity(0):parent():pos()):toAngle():pitch()),0,0)))
+                
                 if(MaxDepressions:count()>1){
                     local Yaw = abs(angnorm(Self:toLocal(GunYaw)):yaw())
                     if(changed(Yaw)){
