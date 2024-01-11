@@ -47,15 +47,15 @@ if(first() | dupefinished()){
     local VAxis_Offset  = vec(-8, 0, -3) #---Vertical Axis Offset---#
     Interval            = 60 #---Better rotation but with more Ops---#
     MaxElevation        = 58 #---How High you can aim up (in degrees)---#
-    MaxDepressions      = array(8) #---How Low you can aim down (in degrees) [Front,Side,Rear]---#
-    DepressionAngles    = array(0) #---Areas where depresions are set [0-[1st index]->1-[2st index]->2-[3st index]->3-[4st index]->180]---#
+    MaxDepressions      = array(8,10,12,8) #---How Low you can aim down (in degrees) [Front,Side,Rear] If you set just one depression value it will work---#
+    DepressionAngles    = array(0,15,35) #---Areas where depresions are set [0-[1st index]->1-[2st index]->2-[3st index]->3-[4st index]->180]---#
     MinYaw              = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
     MaxYaw              = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
     RotateSpeed         = 60 #---Turret Rotation Speed in Degrees per Second---#  
     MoveSound           = "d3_citadel.podarm_move" #---Sound that e2 makes when rotating turret---#    
     Stabilisation       = vec(0) #---Stabilisation [vec(0,0,1) - vertical, vec(1,1,0) - horizontal, vec(1) - full, vec(0) - no stabilisation]---#
-    Balistic_Correction = 1 #---0 - OFF, 1 - ON---#
-    Cam_Mode            = 1 #---0 - Realistic Camera, 1 - Arcade Camera ---#
+    Balistic_Correction = 0 #---0 - OFF, 1 - ON---#
+    Cam_Mode            = 0 #---0 - Realistic Camera, 1 - Arcade Camera ---#
     # END Settings 
     #  -DO NOT TOUCH ANYTHING ELSE UNDER THIS.
     #--------------------------------------------------------------------------------------------------------------#
