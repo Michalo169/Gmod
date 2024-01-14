@@ -3,27 +3,27 @@
 @persist FOV FOV_Max FOV_Min  CamNum 
 @outputs Ops Correction:vector Fire Fire1
 @outputs AimPos:vector Active_Out
-@persist [GunAng Offset]:angle [AimPos GunDir]:vector [Self]:entity [Filter]:array LockAim
+@persist [GunAng Offset Ang_Min Ang_Max]:angle [AimPos GunDir]:vector [Self]:entity [Filter]:array LockAim
 @persist SetDepression MaxDepression Unlock Active Driver:entity
-@persist Debug Cameras:table Interval MaxElevation [MaxDepressions DepressionAngles]:array MinYaw MaxYaw RotateSpeed MoveSound:string Stabilisation:vector Balistic_Correction Cam_Mode #[Settings]#  
+@persist Debug Cameras:table Interval MaxElevation [MaxDepressions DepressionAngles]:array MinYaw MaxYaw RotateSpeed MoveSound:string Stabilisation:vector Balistic_Correction Cam_Mode DontClamp #[Settings]#  
 @trigger Active_In
 
 #[
-1.0.1
+1.0.2
 
 This Expression2 is edit of "GG5 as holoturret" made by CDU
 
 Make sure that E2 is facing north bcos it uses [Self:toLocal()] and uh yeah
 
+ver 1.0.1
 It works :)
-
 Uhhhh thats all about it
-
 Expression2 is fucking shit, like its so fucking trash that there are no words to say how bad it is
- 
 It works now :)
-
 Edit by STEAM_0:0:107514807 
+
+ver 1.0.2
+idk i made realistic cam better ro smthinn
 
 ]#
 
@@ -31,11 +31,12 @@ Edit by STEAM_0:0:107514807
 if(first() | dupefinished()){
     # Settings
     Debug = 0
-                    #Cameras                
-                    #                              entity, vector,                    vector2,     number,       number,   number
-    Cameras = table(#Parent must be defined first [Parent, Position local to parent, (Minimal FOV, Maximum FOV), Distance, DrawPlayer]
+                    #Cameras
+                    #                                                                                                          Works Only for pitch                
+                    #                              entity, vector,                    vector2,           number,   number,     angle,          angle
+    Cameras = table(#Parent must be defined first [Parent, Position local to parent, (Min FOV, Max FOV), Distance, DrawPlayer, Min View Angle, Max View Angle]
                     #array(Chair, vec(0,3,48),      ang(), vec2(5, 90),   0, 0),
-                    array(Gun, vec(24,10,0),       ang(), vec2(5, 90),  25, 1)
+                    array(HAxis, vec(0.75, -23, 15.35), ang(0,90,0), vec2(5, 90), -25, 1, ang(3,0,0), ang(32,0,0))
                     #array(HAxis, vec(0.75, -23, 15.35), ang(0,90,0), vec2(5, 90), -25, 1)
                     )
                     
@@ -45,17 +46,19 @@ if(first() | dupefinished()){
                     
     local HAxis_Offset  = vec(0, 0, 0) #---Horizontal Axis Offset---#
     local VAxis_Offset  = vec(-8, 0, -3) #---Vertical Axis Offset---#
-    Interval            = 60 #---Better rotation but with more Ops---#
-    MaxElevation        = 58 #---How High you can aim up (in degrees)---#
-    MaxDepressions      = array(8,10,12,8) #---How Low you can aim down (in degrees) [Front,Side,Rear] If you set just one depression value it will work---#
-    DepressionAngles    = array(0,15,35) #---Areas where depresions are set [0-[1st index]->1-[2st index]->2-[3st index]->3-[4st index]->180]---#
+    Interval            = 60 #---Better rotation but with more Ops In my opinion works best with 60---#
+    MaxElevation        = 25 #---How High you can aim up (in degrees)---#
+    MaxDepressions      = array(8) #---How Low you can aim down (in degrees) [Front,Side,Rear]---#
+    DepressionAngles    = array(0) #---Areas where depresions are set [0-[1st index]->1-[2st index]->2-[3st index]->3-[4st index]->180]---#
     MinYaw              = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
     MaxYaw              = 360 #---Keep This at 360. If making a tank destroyer or bow gun, make it 20 and 20---#
     RotateSpeed         = 60 #---Turret Rotation Speed in Degrees per Second---#  
     MoveSound           = "d3_citadel.podarm_move" #---Sound that e2 makes when rotating turret---#    
     Stabilisation       = vec(0) #---Stabilisation [vec(0,0,1) - vertical, vec(1,1,0) - horizontal, vec(1) - full, vec(0) - no stabilisation]---#
     Balistic_Correction = 0 #---0 - OFF, 1 - ON---#
-    Cam_Mode            = 0 #---0 - Realistic Camera, 1 - Arcade Camera ---#
+    Cam_Mode            = 1 #---0 - Realistic Camera, 1 - Arcade Camera ---#
+    
+
     # END Settings 
     #  -DO NOT TOUCH ANYTHING ELSE UNDER THIS.
     #--------------------------------------------------------------------------------------------------------------#
@@ -73,9 +76,9 @@ if(first() | dupefinished()){
     if(Cam_Mode==0){
     holoCreate(0)
     holoAlpha(0,255*Debug),holoShadow(0,0)
-    holoCreate(14)
-    holoAlpha(14,255*Debug),holoShadow(0,0)
-    holoParent(14,0)
+    holoCreate(3)
+    holoAlpha(3,255*Debug),holoShadow(0,0)
+    holoParent(3,0)
     }
     
     if(->HAxis){
@@ -130,10 +133,10 @@ if(first() | dupefinished()){
                 holoParent(0,Parent)
                 holoPos(0,Parent:toWorld(Pos))
                 holoAng(0,Parent:toWorld(Ang))
-                holoPos(14,Parent:toWorld(Pos)) 
-                W["Parent", entity]   = holoEntity(14)
-                W["Position", vector] = holoEntity(14):toWorld(vec())
-                W["Angle", angle]     = holoEntity(14):toWorld(ang())
+                holoPos(3,Parent:toWorld(Pos)) 
+                W["Parent", entity]   = holoEntity(3)
+                W["Position", vector] = holoEntity(3):toWorld(vec())
+                W["Angle", angle]     = holoEntity(3):toWorld(ang())
                 W["Distance", number] = Dist
                 W["FOV", number]      = FOV_Max
                 W[21]                 = DrawPlayer #player 
@@ -182,14 +185,14 @@ if(first() | dupefinished()){
     if(Debug){
         holoModel(1, "models/sprops/misc/axis_plane.mdl")
         holoModel(2, "models/sprops/misc/axis_plane.mdl")               
-        holoCreate(3, Self:toWorld(vec()),vec(1),Self:toWorld(ang()))  
-        holoModel(3, "models/sprops/misc/bone_from_x.mdl")
-        holoCreate(4, HAxis:toWorld(HAxis_Offset),vec(10,10,0.1),Self:toWorld(ang(0,GunAng:yaw(),0)))
-        holoModel(4, "models/sprops/cylinders/size_5/cylinder_12x3.mdl")
-        holoColor(4, vec4(0,255,0,200))        
-        holoCreate(5, VAxis:toWorld(VAxis_Offset),vec(10,10,0.1),Gun:angles():setRoll(-90))  
+        holoCreate(4, Self:toWorld(vec()),vec(1),Self:toWorld(ang()))  
+        holoModel(4, "models/sprops/misc/bone_from_x.mdl")
+        holoCreate(5, HAxis:toWorld(HAxis_Offset),vec(10,10,0.1),Self:toWorld(ang(0,GunAng:yaw(),0)))
         holoModel(5, "models/sprops/cylinders/size_5/cylinder_12x3.mdl")
-        holoColor(5, vec4(255,0,0,200))
+        holoColor(5, vec4(0,255,0,200))        
+        holoCreate(6, VAxis:toWorld(VAxis_Offset),vec(10,10,0.1),Gun:angles():setRoll(-90))  
+        holoModel(6, "models/sprops/cylinders/size_5/cylinder_12x3.mdl")
+        holoColor(6, vec4(255,0,0,200))
         parentToSelf()
     }else{
         timer("parent", 240)
@@ -217,6 +220,13 @@ if(first() | dupefinished()){
             if(changed(CamNum)|FOV_Max==0){
                 FOV_Min = Cameras[CamNum+1,array][4, vector2]:x()
                 FOV_Max = FOV = Cameras[CamNum+1,array][4, vector2]:y()
+                if(Cameras[CamNum+1,array][7, angle]==Cameras[CamNum+1,array][8, angle]){
+                    DontClamp = 1    
+                }else{
+                    Ang_Min = Cameras[CamNum+1,array][7, angle]
+                    Ang_Max = -Cameras[CamNum+1,array][8, angle]
+                    DontClamp = 0
+                }
             }     
             cam(Cam, Cameras, CamNum, FOV, Cam_Mode)
             if(LockAim==0){
@@ -257,8 +267,20 @@ if(first() | dupefinished()){
                 holoAng(2, holoEntity(1):toWorld(GunPitch))
                 
                 if(Cam_Mode==0){
-                    holoAng(14,holoEntity(0):toWorld(ang(-(GunDir:toAngle():pitch()-(AimPos-holoEntity(0):parent():pos()):toAngle():pitch()),0,0)))
+                    if(DontClamp){
+                        Cam_Pitch = GunPitch:pitch()                       
+                    }else{
+                        Cam_Pitch = clamp(GunPitch:pitch(),Ang_Max:pitch(),Ang_Min:pitch()) 
+                    }
+                    if(holoEntity(0):parent()==Gun){
+                        holoAng(3,holoEntity(0):toWorld(ang(-(GunDir:toAngle():pitch()-(AimPos-holoEntity(0):pos()):normalized():toAngle():pitch()),0,0)))
+                    }elseif(!Balistic_Correction){
+                        holoAng(3,holoEntity(0):toWorld(ang(Cam_Pitch,0,0)))
+                    }else{
+                        holoAng(3,holoEntity(0):toWorld(ang(-(GunDir:toAngle():pitch()-(AimPos-holoEntity(0):pos()):normalized():toAngle():pitch())+Cam_Pitch,0,0)))    
+                    }                      
                 }
+                
                 
                 if(MaxDepressions:count()>1){
                     local Yaw = abs(angnorm(Self:toLocal(GunYaw)):yaw())
@@ -277,61 +299,60 @@ if(first() | dupefinished()){
             Ops=ops()
         }
 }
-        event keyPressed(Player:entity, Key:string, Down:number, _:string) {
-            if(Player==Driver&Active){ 
-                if(Down){                      
-                    switch(Key){
-                        case "mouse_wheel_up",
-                            FOV = clamp(FOV-10, FOV_Min, FOV_Max)                            
-                        break
-                        case "mouse_wheel_down",
-                            FOV = clamp(FOV+10, FOV_Min, FOV_Max)                           
-                        break
-                        case "lcontrol",
-                            if(Cameras:count()>1){
-                                CamNum += 1
-                                CamNum = CamNum % Cameras:count()  
-                            }
-                        break
-                        case "f",
-                            Unlock = !Unlock
-                            Fire = Fire1 = 0
-                            Active_Out = Unlock
-                        break 
-                        case "lalt",
-                            LockAim = 1
-                        break       
-                        case "mouse_left",
-                            if(Unlock==1){
-                            Fire = 1    
-                            }
-                        break            
-                        case "mouse_right",
-                            if(Unlock==1){
-                            Fire1 = 1    
-                            }
-                        break            
-                    }   
-                }else{
-                    switch(Key){
-                        case "lalt",
-                            LockAim = 0
-                        break
-                        case "mouse_left",
-                            if(Unlock==1){
-                            Fire = 0    
-                            }
-                        break                               
-                        case "mouse_right",
-                            if(Unlock==1){
-                            Fire1 = 0    
-                            }
-                        break                               
-                    }    
-                } 
-            }   
-        }
-
+    event keyPressed(Player:entity, Key:string, Down:number, _:string) {
+        if(Player==Driver&Active){ 
+            if(Down){                      
+                switch(Key){
+                    case "mouse_wheel_up",
+                        FOV = clamp(FOV-10, FOV_Min, FOV_Max)                            
+                    break
+                    case "mouse_wheel_down",
+                        FOV = clamp(FOV+10, FOV_Min, FOV_Max)                           
+                    break
+                    case "lcontrol",
+                        if(Cameras:count()>1){
+                            CamNum += 1
+                            CamNum = CamNum % Cameras:count()  
+                        }
+                    break
+                    case "f",
+                        Unlock = !Unlock
+                        Fire = Fire1 = 0
+                        Active_Out = Unlock
+                    break 
+                    case "lalt",
+                        LockAim = 1
+                    break       
+                    case "mouse_left",
+                        if(Unlock==1){
+                        Fire = 1    
+                        }
+                    break            
+                    case "mouse_right",
+                        if(Unlock==1){
+                        Fire1 = 1    
+                        }
+                    break            
+                }   
+            }else{
+                switch(Key){
+                    case "lalt",
+                        LockAim = 0
+                    break
+                    case "mouse_left",
+                        if(Unlock==1){
+                        Fire = 0    
+                        }
+                    break                               
+                    case "mouse_right",
+                        if(Unlock==1){
+                        Fire1 = 0    
+                        }
+                    break                               
+                }    
+            } 
+        }   
+    }
     event playerEnteredVehicle(Player:entity, Vehicle:entity) {
             if(Vehicle==Chair&->Chair){
                 Unlock = 0 
