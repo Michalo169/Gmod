@@ -3,59 +3,35 @@
 --@shared
 
 --[[
-
-Version 1.1
-
+Version 1.2
 This SF just works
-
 Put all wheels to array [Adv Entity Marker]
-
 First wheel in array must be the drive wheel
-
 If all inputs are wired restart SF and all constraints should be done
 
 STEAM_0:0:107514807
-
 ]]
 
 if SERVER then
-    
     wire.adjustInputs(
         {"Wheels1","Wheels2","Key"},
         {"array","array","number"}
         )
-
-    local Wheels = wire.ports.Wheels1
-    local Wheels1 = wire.ports.Wheels2
-
-    constraint.setConstraintClean(false)
-
-    if wire.ports.Key == 1 then
-        
-        for Num,v in ipairs(Wheels) do
-            
-            if Num > 1 then
-                
-            constraint.ballsocketadv(Wheels[1], v, nil, nil, Vector(0,0,0), Vector(0,0,0), nil, nil, Vector(-0.01,-180,-180), Vector(0.01,180,180), Vector(0), true, true)
-            
-            end
-            
-        end
-        
-    end 
     
-    if wire.ports.Key == 1 then
+    local Vector = Vector(-0.001,-180,-180)
         
+    local Wheels1 = wire.ports.Wheels1
+    local Wheels2 = wire.ports.Wheels2
+    if wire.ports.Key == 1 then
         for Num,v in ipairs(Wheels1) do
-            
             if Num > 1 then
-                
-            constraint.ballsocketadv(Wheels1[1], v, nil, nil, Vector(0,0,0), Vector(0,0,0), nil, nil, Vector(-0.01,-180,-180), Vector(0.01,180,180), Vector(0), true, true)
-            
+            constraint.ballsocketadv(Wheels1[1], v, nil, nil, Vector(0), Vector(0), nil, nil, -Vector, Vector, Vector(0), true, true)
             end
-            
         end
-        
+        for Num,v in ipairs(Wheels2) do
+            if Num > 1 then
+            constraint.ballsocketadv(Wheels2[1], v, nil, nil, Vector(0), Vector(0), nil, nil, -Vector, Vector, Vector(0), true, true)
+            end
+        end
     end 
-    
 end
